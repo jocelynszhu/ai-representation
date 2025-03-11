@@ -21,7 +21,7 @@ affirmative_statements = policy_statements['affirming_statement'].tolist()
 len(affirmative_statements)
 
 # %% Remove UK specific references
-exclude = ["UK", "United Kingdom", "Britain", "British", "Heathrow"]
+exclude = ["UK", "United Kingdom", "Britain", "British", "Heathrow", "NHS"]
 filtered_affirm = [item for item in affirmative_statements if not any(word in item for word in exclude)]
 len(filtered_affirm)
 # %%
