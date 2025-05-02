@@ -55,12 +55,13 @@ with open("biographies.jsonl", "w") as file:
         file.write(json.dumps(json_record) + "\n")
 
 # %% Create written profiles
-biographies = pd.read_json("biographies.jsonl", lines=True)
+biographies = pd.read_json("rep_biographies.jsonl", lines=True)
+# %%
 
 PROFILE_PROMPT = """
 You are a biographer. Generate a detailed, plausible biography for an individual with the given demographics.
 
-Return the written profile in JSONL form with two key-value pairs, the Profile in natural language form and the UUID given in the demographics dictionary.
+Return the written profile in JSONL form with two key-value pairs, the ID given in the demographics dictionary and the Profile in natural language form.
 """
 def run_llm(PROFILE_PROMPT, bio):
         client = OpenAI(api_key=os.environ["OPENAI_API_KEY"])
@@ -76,6 +77,7 @@ def run_llm(PROFILE_PROMPT, bio):
         response = client.chat.completions.create(
             model="gpt-4o",
             messages=messages,
+            temperature=0.0,
             response_format={ "type": "json_object" }
         )
         gpt_content = response.choices[0].message.content
@@ -87,8 +89,8 @@ def run_llm(PROFILE_PROMPT, bio):
 for index, row in biographies.iterrows():
     bio_dict = row.to_dict()
     response = run_llm(PROFILE_PROMPT, str(bio_dict))
-    print(f"Generated profile for UUID {bio_dict['UUID']}")
+    print(f"Generated profile for ID {bio_dict['ID']}")
     
-    with open("written_profiles.jsonl", "a") as file:
+    with open("gpt-o_written_profiles.jsonl", "a") as file:
         file.write(response + "\n")
 # %%
