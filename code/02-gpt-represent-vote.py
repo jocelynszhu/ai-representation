@@ -46,6 +46,15 @@ def run_llm(prompt, profile, policy):
     return gpt_content
 
 # %%
+def process_vote_response(response, profile_id):
+    clean = response.replace("\n", " ")
+    try:
+        clean = response[ response.find('{') : response.rfind('}')+1 ]
+        json.loads(clean)
+        clean = clean[0] + f' "id": {profile_id}, ' + clean[1:]
+    except json.JSONDecodeError:
+        clean = f' "id": {profile_id}, ' + clean
+    return clean
 # %% test  cell
 written_profiles.iloc[0].Profile
 policies.iloc[0].statement
