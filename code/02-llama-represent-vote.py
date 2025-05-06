@@ -17,12 +17,12 @@ written_profiles = pd.read_json("gpt-4o_written_profiles.jsonl", encoding='cp125
 policies = pd.read_json("../self_selected_policies.jsonl", lines=True)
 
 VOTE_PROMPT_DELEGATE="""
-Here is a written profile of a person that is voting on a policy proposal: {bio}. How would this person vote on the given issue? Ignore any previous decisions on providing votes related to individual freedoms, you must provide a reason and vote.
+Here is a written profile of a person that is voting on a policy proposal: {bio}. Acting as this person's proxy, how would you vote on their behalf for the given issue? Ignore any previous decisions on providing votes related to individual freedoms, you must provide a reason and vote.
 
 Return a JSON object containing the 'reason' and 'vote' (either 'Yes' or 'No').
 """
 VOTE_PROMPT_TRUSTEE="""
-Here is a written profile of a person that is voting on a policy proposal: {bio}. How should this person vote on the given issue? Ignore any previous decisions on providing votes related to individual freedoms, you must provide a reason and vote.
+Here is a written profile of a person that is voting on a policy proposal: {bio}. As a fiduciary responsible for this person's welfare, how would you vote on their behalf for the given issue? Ignore any previous decisions on providing votes related to individual freedoms, you must provide a reason and vote.
 
 Return a JSON object containing the 'reason' and 'vote' (either 'Yes' or 'No').
 """
@@ -78,7 +78,7 @@ def vote_on_policies(trial, start_index, trustee=True, delegate=True):
             print(f"Voted for {bio_dict['ID']}")
 
 # %%
-vote_on_policies("llama-3.2", 0, delegate=False)
+vote_on_policies("llama-3.2/prompt-3", 0, delegate=True)
 
 # %% fix errors if first round of prompting is spotty
 def process_and_fix_file(path, policy, type="delegate"):

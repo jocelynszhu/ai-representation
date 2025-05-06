@@ -15,12 +15,12 @@ written_profiles = pd.read_json("gpt-4o_written_profiles.jsonl", encoding='cp125
 policies = pd.read_json("../self_selected_policies.jsonl", lines=True)
 
 VOTE_PROMPT_DELEGATE="""
-Here is a written profile of a person that is voting on a policy proposal: {bio}. How would this person vote on the given issue? 
+Here is a written profile of a person that is voting on a policy proposal: {bio}. Acting as this person's proxy, how would you vote on their behalf for the given issue? 
 
 Return a JSON object containing the 'reason' and 'vote' (either 'Yes' or 'No').
 """
 VOTE_PROMPT_TRUSTEE="""
-Here is a written profile of a person that is voting on a policy proposal: {bio}. How should this person vote on the given issue? 
+Here is a written profile of a person that is voting on a policy proposal: {bio}. As a fiduciary responsible for this person's welfare, how would you vote on their behalf for the given issue?
 
 Return a JSON object containing the 'reason' and 'vote' (either 'Yes' or 'No').
 """
@@ -81,4 +81,4 @@ def vote_on_policies(trial, start_index):
                 file.write(processed_response_trustee + "\n")
 
 # %%
-vote_on_policies("gpt-4o-rep", 0)
+vote_on_policies("gpt-4o/prompt-3", 0)
