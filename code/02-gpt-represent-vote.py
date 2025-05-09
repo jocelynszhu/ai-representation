@@ -81,4 +81,4 @@ def vote_on_policies(trial, start_index):
                 file.write(processed_response_trustee + "\n")
 
 # %%
-vote_on_policies("gpt-4o/prompt-3", 0)
+vote_on_policies("gpt-4o/prompt-3", 14)

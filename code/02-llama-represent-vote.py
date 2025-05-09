@@ -78,7 +78,7 @@ def vote_on_policies(trial, start_index, trustee=True, delegate=True):
             print(f"Voted for {bio_dict['ID']}")
 
 # %%
-vote_on_policies("llama-3.2/prompt-3", 0, delegate=True)
+vote_on_policies("llama-3.2/prompt-3", 13, delegate=True)
 
 # %% fix errors if first round of prompting is spotty
 def process_and_fix_file(path, policy, type="delegate"):
