@@ -64,10 +64,10 @@ vote_stats
 flip_votes_list = []
 
 for i in range(1, 21):
-    #votes_trustee = pd.read_json(f"../data/trustee/gpt-4o/prompt-3/t_policy_{i}_votes.jsonl",encoding='cp1252', lines=True)
-    #votes_delegate = pd.read_json(f"../data/trustee/gpt-4o/prompt-4/t_policy_{i}_votes.jsonl",encoding='cp1252', lines=True)
-    votes_trustee = pd.read_json(f"../data/trustee/{trial}/t_policy_{i}_votes.jsonl",encoding='cp1252', lines=True)
-    votes_delegate = pd.read_json(f"../data/delegate/{trial}/d_policy_{i}_votes.jsonl",encoding='cp1252', lines=True)
+    votes_trustee = pd.read_json(f"../data/delegate/gpt-4o/prompt-3/d_policy_{i}_votes.jsonl",encoding='cp1252', lines=True)
+    votes_delegate = pd.read_json(f"../data/delegate/gpt-4o/prompt-4/d_policy_{i}_votes.jsonl",encoding='cp1252', lines=True)
+    #votes_trustee = pd.read_json(f"../data/trustee/{trial}/t_policy_{i}_votes.jsonl",encoding='cp1252', lines=True)
+    #votes_delegate = pd.read_json(f"../data/delegate/{trial}/d_policy_{i}_votes.jsonl",encoding='cp1252', lines=True)
     votes_trustee['source'] = 'trustee'
     votes_delegate['source'] = 'delegate'
     votes_trustee['idx'] = range(len(votes_trustee))
@@ -97,7 +97,7 @@ flipped = pd.DataFrame(flip_votes_list)
 print(len(flipped)/(20*len(merged)))
 flipped
 #%%
-votes_trustee
+#votes_trustee
 # %% check flipped counts if default to model
 
 merged = flipped.merge(model_default, on='policy_id')
