@@ -8,7 +8,7 @@ from itertools import product
 # Load policies
 policies = pd.read_json("../self_selected_policies.jsonl", lines=True)
 #%%
-def compute_flip_percentage(trial1, trial2, role1, role2):
+def compute_flip_percentage(trial1, trial2, role1, role2, policies_to_ignore=None):
     """Compute the percentage of flipped votes between two trials.
     
     Args:
@@ -22,7 +22,10 @@ def compute_flip_percentage(trial1, trial2, role1, role2):
     print(f"First path: {role1}/{trial1}/{role1[0]}")
     print(f"Second path: {role2}/{trial2}/{role2[0]}")
     for i in range(1, 21):
-        print(f"Processing policy {i}...")
+        if policies_to_ignore is not None and i in policies_to_ignore:
+            print(f"Skipping policy {i} because it is in the ignore list")
+            continue
+       # print(f"Processing policy {i}...")
         # Load votes for both trials
         try:
             votes1 = pd.read_json(f"../data/{role1}/{trial1}/{role1[0]}_policy_{i}_votes.jsonl", encoding='cp1252', lines=True)
@@ -44,7 +47,14 @@ def compute_flip_percentage(trial1, trial2, role1, role2):
         
         # Merge on index
         merged = pd.merge(votes1, votes2, how='inner', on='idx', suffixes=('_1', '_2'))
-        
+        # Remove rows with NA votes from both sides
+        merged = merged[
+            (~merged['vote_1'].isin(['NA', 'na', 'N/A', 'n/a'])) & 
+            (~merged['vote_2'].isin(['NA', 'na', 'N/A', 'n/a']))
+        ]
+        # Print number of rows removed due to NA votes
+        num_removed = len(votes1) - len(merged)
+       # print(f"Removed {num_removed} rows with NA votes")
         # Find flipped votes
         flipped = merged[
             ((merged['vote_1'] == 'Yes') & (merged['vote_2'] == 'No')) |
@@ -73,10 +83,10 @@ def compute_flip_percentage(trial1, trial2, role1, role2):
 #trials = ['gpt-4o/prompt-0', 'gpt-4o/prompt-1', 'gpt-4o/prompt-2', 'gpt-4o/prompt-3', 'gpt-4o/prompt-4']
 trials = ['llama-3.2/prompt-3', 'llama-3.2/prompt-4']
 results = []
-
+policies_to_ignore = [17,19, 20, 7]
 # 1. Delegate-Trustee combinations (cross-role)
 for t1, t2 in product(trials, trials):
-    flip_percentage, _ = compute_flip_percentage(t1, t2, 'delegate', 'trustee')
+    flip_percentage, _ = compute_flip_percentage(t1, t2, 'delegate', 'trustee', policies_to_ignore)
     results.append({
         'type': 'cross-role',
         'trial1': t1,
@@ -89,7 +99,7 @@ for t1, t2 in product(trials, trials):
 # 2. Delegate-Delegate combinations (same role)
 for t1, t2 in product(trials, trials):
     if t1 != t2:  # Only compare different prompts
-        flip_percentage, _ = compute_flip_percentage(t1, t2, 'delegate', 'delegate')
+        flip_percentage, _ = compute_flip_percentage(t1, t2, 'delegate', 'delegate', policies_to_ignore)
         results.append({
             'type': 'same-role',
             'trial1': t1,
@@ -102,7 +112,7 @@ for t1, t2 in product(trials, trials):
 # 3. Trustee-Trustee combinations (same role)
 for t1, t2 in product(trials, trials):
     if t1 != t2:  # Only compare different prompts
-        flip_percentage, _ = compute_flip_percentage(t1, t2, 'trustee', 'trustee')
+        flip_percentage, _ = compute_flip_percentage(t1, t2, 'trustee', 'trustee', policies_to_ignore)
         results.append({
             'type': 'same-role',
             'trial1': t1,
