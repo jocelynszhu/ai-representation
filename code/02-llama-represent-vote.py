@@ -42,11 +42,14 @@ def run_llm(prompt, bio, policy):
 # %%
 def process_vote_response(response, profile_id):
     clean = response.replace("\n", " ")
+    print(clean)
     try:
         clean = response[ response.find('{') : response.rfind('}')+1 ]
         json.loads(clean)
         clean = clean[0] + f' "id": {profile_id}, ' + clean[1:]
     except json.JSONDecodeError:
+        print(f"Error parsing JSON for profile {profile_id}: {response}")
+        
         clean = f' "id": {profile_id}, ' + clean
     return clean
 
@@ -78,7 +81,7 @@ def vote_on_policies(trial, start_index, trustee=True, delegate=True):
             print(f"Voted for {bio_dict['ID']}")
 
 # %%
-vote_on_policies("llama-3.2/prompt-3", 13, delegate=True)
+vote_on_policies("llama-3.2-old/prompt-3", 19, delegate=False, trustee=True)
 
 # %% fix errors if first round of prompting is spotty
 def process_and_fix_file(path, policy, type="delegate"):
