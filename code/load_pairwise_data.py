@@ -74,19 +74,19 @@ def load_pairwise_data(base_llm, prompts, policies_to_ignore=None):
     all_data = pd.concat(all_data)
     return all_data
 # %%
-base_llm = "gpt-4o"
-#base_llm = "claude-3-sonnet"
+# base_llm = "gpt-4o"
+# #base_llm = "claude-3-sonnet"
 
-prompts = ["prompt-1", "prompt-2", "prompt-3", "prompt-4"]
-all_data = load_pairwise_data(base_llm, prompts, policies_to_ignore=None)
-# %%
-# Set display options to show all text in DataFrame without truncation
-pd.set_option('display.max_colwidth', None)
-pd.set_option('display.max_rows', 10)
-pd.set_option('display.max_columns', None)
-pd.set_option('display.width', None)
+# prompts = ["prompt-1", "prompt-2", "prompt-3", "prompt-4"]
+# all_data = load_pairwise_data(base_llm, prompts, policies_to_ignore=None)
+# # %%
+# # Set display options to show all text in DataFrame without truncation
+# pd.set_option('display.max_colwidth', None)
+# pd.set_option('display.max_rows', 10)
+# pd.set_option('display.max_columns', None)
+# pd.set_option('display.width', None)
 
-all_data[(all_data["policy_id"] == 5) & (all_data["same_condition"] == False) & (all_data["flipped"] == True)]\
-    .filter(["prompt1", "prompt2", "source_1", "source_2", "vote_1", "vote_2", "reason_1", "reason_2"])
+# all_data[(all_data["policy_id"] == 5) & (all_data["same_condition"] == False) & (all_data["flipped"] == True)]\
+#     .filter(["prompt1", "prompt2", "source_1", "source_2", "vote_1", "vote_2", "reason_1", "reason_2"])
 
 # %%
