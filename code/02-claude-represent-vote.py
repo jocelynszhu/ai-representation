@@ -22,15 +22,15 @@ def load_prompts():
 def run_claude(prompt, profile, policy):
     client = anthropic.Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
     
-    # messages = [
-    #     {
-    #         "role": "user",
-    #         "content": f"{prompt.format(bio=profile)}\n\nPolicy proposal: {policy}"
-    #     }
-    # ]
     messages = [
-        {"role": "user", "content": policy},
+        {
+            "role": "user",
+            "content": f"{prompt.format(bio=profile)}\n\nPolicy proposal: {policy}"
+        }
     ]
+    # messages = [
+    #     {"role": "user", "content": policy},
+    # ]
     system = prompt.format(bio=profile)
    # print(system)
    # print(messages)

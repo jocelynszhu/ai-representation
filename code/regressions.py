@@ -14,7 +14,7 @@ all_data = load_pairwise_data(base_llm, prompts, policies_to_ignore=policies_to_
 #%%
 
 biographies = pd.read_json("rep_biographies.jsonl", lines=True)
-biographies['id_1'] = range(len(biographies))
+biographies['id_1'] = biographies["ID"]
 # %%
 joined = all_data.merge(biographies, on='id_1', how='left')
 #%%

@@ -6,14 +6,14 @@ from load_pairwise_data import load_pairwise_data
 import matplotlib.pyplot as plt
 import seaborn as sns
 # %%
-#base_llm = "gpt-4o"
-base_llm = "claude-3-sonnet"
+base_llm = "gpt-4o"
+#base_llm = "claude-3-sonnet"
 prompts = ["prompt-0", "prompt-1", "prompt-2", "prompt-3", "prompt-4"]
 policies_to_ignore = None
 all_data = load_pairwise_data(base_llm, prompts, policies_to_ignore=policies_to_ignore)
 # %%
 biographies = pd.read_json("rep_biographies.jsonl", lines=True)
-biographies['id_1'] = range(len(biographies))
+biographies['id_1'] = biographies['ID']
 # %%
 joined = all_data.merge(biographies, on='id_1', how='left')
 simple = joined.copy()
@@ -49,6 +49,7 @@ pd.set_option('display.width', None)
 # %%
 grouped = simple.groupby(["policy_id", "combined_prompt_name_1", "combined_prompt_name_2"])["flipped"].value_counts(normalize=True).unstack()
 grouped.reset_index(inplace=True)
+
 # %%
 
 def plot_flip_rates():
