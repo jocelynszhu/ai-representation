@@ -2,19 +2,23 @@
 #%%
 import json
 import pandas as pd 
-
+import os
 # parse_and_write_jsonl('path/to/input.txt', 'path/to/output.jsonl')(drop=True, inplace=True)
 #df
 #%%
 num_policies = 20
+model = 'claude-3-sonnet'
 delegate_or_trustee = ['delegate', 'trustee']
 prompt = 'prompt-4'
 for policy in range(num_policies):
     print(f'Processing policy {policy+1} of {num_policies}')
     for do_t in delegate_or_trustee:
         print(f'Processing {do_t} for policy {policy+1}')
-        input_filename = f'../data/{do_t}/llama-3.2-old/{prompt}/{do_t[0]}_policy_{policy+1}_votes.jsonl'
-        output_filename = f'../data/{do_t}/llama-3.2/{prompt}/{do_t[0]}_policy_{policy+1}_votes.jsonl'
+        input_filename = f'../data/{do_t}/{model}-old/{prompt}/{do_t[0]}_policy_{policy+1}_votes.jsonl'
+        print(input_filename)
+        # Create output directory if it doesn't exist
+        os.makedirs(f'../data/{do_t}/{model}/{prompt}', exist_ok=True)
+        output_filename = f'../data/{do_t}/{model}/{prompt}/{do_t[0]}_policy_{policy+1}_votes.jsonl'
         with open(input_filename, 'r') as f:
             lines = f.readlines()
 
@@ -57,6 +61,7 @@ for policy in range(num_policies):
                     # Try 4-line chunk if single line parsing failed or line was empty
                     chunk = lines[i:i+4]
                     if len(chunk) == 4:
+                        #print(chunk)
                         raw_json = ''.join(chunk).strip()
                         obj = json.loads(raw_json)
                         out_f.write(json.dumps(obj) + '\n')

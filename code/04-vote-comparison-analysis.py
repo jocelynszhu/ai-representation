@@ -3,7 +3,7 @@ import pandas as pd
 import numpy as np
 from itertools import product
 #%%
-#pd.read_json("data/delegate/llama-3.2/prompt-3/d_policy_1_votes.jsonl", encoding='cp1252', lines=True)
+#pd.read_json("data/delegate/claude-3-sonnet/prompt-3/d_policy_1_votes.jsonl", encoding='cp1252', lines=True)
 #%%
 # Load policies
 policies = pd.read_json("../self_selected_policies.jsonl", lines=True)
@@ -21,6 +21,7 @@ def compute_flip_percentage(trial1, trial2, role1, role2, policies_to_ignore=Non
    # print(f"Processing {role1}-{role2} Trial1: {trial1} Trial2: {trial2}...")
     print(f"First path: {role1}/{trial1}/{role1[0]}")
     print(f"Second path: {role2}/{trial2}/{role2[0]}")
+    all_data = []
     for i in range(1, 21):
         if policies_to_ignore is not None and i in policies_to_ignore:
             print(f"Skipping policy {i} because it is in the ignore list")
@@ -46,7 +47,8 @@ def compute_flip_percentage(trial1, trial2, role1, role2, policies_to_ignore=Non
         votes2['idx'] = range(len(votes2))
         
         # Merge on index
-        merged = pd.merge(votes1, votes2, how='inner', on='idx', suffixes=('_1', '_2'))
+        merged = pd.merge(votes1, votes2, how='inner', on='idx', suffixes=('_1', '_2'))\
+            .assign(policy_id=i)
         # Remove rows with NA votes from both sides
         merged = merged[
             (~merged['vote_1'].isin(['NA', 'na', 'N/A', 'n/a'])) & 
@@ -60,7 +62,8 @@ def compute_flip_percentage(trial1, trial2, role1, role2, policies_to_ignore=Non
             ((merged['vote_1'] == 'Yes') & (merged['vote_2'] == 'No')) |
             ((merged['vote_1'] == 'No') & (merged['vote_2'] == 'Yes'))
         ]
-        
+        merged['flipped'] = merged['vote_1'] != merged['vote_2']
+        all_data.append(merged)
         # Add to list
         for _, row in flipped.iterrows():
             flip_votes_list.append({
@@ -76,17 +79,21 @@ def compute_flip_percentage(trial1, trial2, role1, role2, policies_to_ignore=Non
     # Calculate percentage of flipped votes
     total_votes = 20 * len(merged)  # 20 policies * number of participants
     flip_percentage = len(flip_votes_list) / total_votes if total_votes > 0 else 0
-    
-    return flip_percentage, flip_votes_list
+    all_data_df = pd.concat(all_data)
+    return flip_percentage, flip_votes_list, all_data_df
 
 # Define all combinations to analyze
-#trials = ['gpt-4o/prompt-0', 'gpt-4o/prompt-1', 'gpt-4o/prompt-2', 'gpt-4o/prompt-3', 'gpt-4o/prompt-4']
-trials = ['llama-3.2/prompt-3', 'llama-3.2/prompt-4']
+trials = ['gpt-4o/prompt-1', 'gpt-4o/prompt-2', 'gpt-4o/prompt-3', 'gpt-4o/prompt-4']
+#trials = ['claude-3-sonnet/prompt-1', 'claude-3-sonnet/prompt-2', 'claude-3-sonnet/prompt-3', 'claude-3-sonnet/prompt-4']
+#trials = ['llama-3.2/prompt-3', 'llama-3.2/prompt-4']
 results = []
-policies_to_ignore = [17,19, 20, 7]
+#policies_to_ignore = [17,19, 20, 7]
+policies_to_ignore = None
+#%%
 # 1. Delegate-Trustee combinations (cross-role)
+all_data_across_trials = []
 for t1, t2 in product(trials, trials):
-    flip_percentage, _ = compute_flip_percentage(t1, t2, 'delegate', 'trustee', policies_to_ignore)
+    flip_percentage, _, all_data = compute_flip_percentage(t1, t2, 'delegate', 'trustee', policies_to_ignore)
     results.append({
         'type': 'cross-role',
         'trial1': t1,
@@ -94,12 +101,13 @@ for t1, t2 in product(trials, trials):
         'role1': 'delegate',
         'role2': 'trustee',
         'flip_percentage': flip_percentage
-    })
+        })
+    all_data_across_trials.append(all_data.assign(condition="cross-role"))
 #%%
 # 2. Delegate-Delegate combinations (same role)
 for t1, t2 in product(trials, trials):
     if t1 != t2:  # Only compare different prompts
-        flip_percentage, _ = compute_flip_percentage(t1, t2, 'delegate', 'delegate', policies_to_ignore)
+        flip_percentage, _, all_data = compute_flip_percentage(t1, t2, 'delegate', 'delegate', policies_to_ignore)
         results.append({
             'type': 'same-role',
             'trial1': t1,
@@ -108,11 +116,12 @@ for t1, t2 in product(trials, trials):
             'role2': 'delegate',
             'flip_percentage': flip_percentage
         })
+        all_data_across_trials.append(all_data.assign(condition="same-role"))
 #%%
 # 3. Trustee-Trustee combinations (same role)
 for t1, t2 in product(trials, trials):
     if t1 != t2:  # Only compare different prompts
-        flip_percentage, _ = compute_flip_percentage(t1, t2, 'trustee', 'trustee', policies_to_ignore)
+        flip_percentage, _, all_data = compute_flip_percentage(t1, t2, 'trustee', 'trustee', policies_to_ignore)
         results.append({
             'type': 'same-role',
             'trial1': t1,
@@ -120,11 +129,12 @@ for t1, t2 in product(trials, trials):
             'role1': 'trustee',
             'role2': 'trustee',
             'flip_percentage': flip_percentage
-        })
+            })
+        all_data_across_trials.append(all_data.assign(condition="same-role"))
 #%%
 # Convert to DataFrame
 results_df = pd.DataFrame(results)
-
+all_data_across_trials_df = pd.concat(all_data_across_trials)
 # Calculate averages for different categories
 cross_role_avg = results_df[results_df['type'] == 'cross-role']['flip_percentage'].mean()
 same_role_avg = results_df[results_df['type'] == 'same-role']['flip_percentage'].mean()
@@ -153,9 +163,29 @@ print(f"Trustee-Trustee average: {trustee_avg:.4f}")
 
 # Save results to CSV
 results_df.to_csv("../data/vote_comparison_results.csv", index=False)
+#%%
+import statsmodels.formula.api as smf
+# Convert flipped to binary
 
-
-
+all_data_across_trials_df['flipped'] = [1 if x else 0 for x in all_data_across_trials_df['flipped']]
+all_data_across_trials_df['policy_id'] = all_data_across_trials_df['policy_id'].astype(str)
+model = smf.logit("flipped ~ C(condition) + C(policy_id)", data=all_data_across_trials_df).fit(cov_type='cluster',
+                                                                                 cov_kwds={'groups': all_data_across_trials_df['id_1']})
+print(model.summary())
+#%%
+from statsmodels.tools.sm_exceptions import PerfectSeparationError
+try:
+    model = smf.logit("flipped ~ C(condition) + C(policy_id) + C(policy_id) * C(condition)", data=all_data_across_trials_df).fit(cov_type='cluster', method='bfgs', maxiter=1000, disp=True,
+                                                                                 cov_kwds={'groups': all_data_across_trials_df['id_1']})
+except PerfectSeparationError:
+    print("Perfect separation detected")
+print(model.summary())
+#%%
+model_basic = smf.logit("flipped ~ C(condition)", data=all_data_across_trials_df).fit(cov_type='cluster',
+                                                                                 cov_kwds={'groups': all_data_across_trials_df['id_1']})
+print(model_basic.summary())
+#%%
+all_data_across_trials_df.groupby("condition").flipped.mean()
 #%%
 def analyze_vote_variance(trial):
     """Analyze variance in votes between delegate and trustee conditions for a given trial."""
