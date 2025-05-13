@@ -6,9 +6,12 @@ policies = pd.read_json("../self_selected_policies.jsonl", lines=True)
 
 # %%
 vote_stats_list = []
-trial = "gpt-4o-rep"
+trial = "gpt-4o/prompt-3"
 for i in range(1, 21):
     print(i)
+    
+    #votes_trustee = pd.read_json(f"../data/delegate/gpt-4o/prompt-3/d_policy_{i}_votes.jsonl",encoding='cp1252', lines=True)
+    #votes_delegate = pd.read_json(f"../data/delegate/gpt-4o/prompt-3/d_policy_{i}_votes.jsonl",encoding='cp1252', lines=True)
     votes_trustee = pd.read_json(f"../data/trustee/{trial}/t_policy_{i}_votes.jsonl",encoding='cp1252', lines=True)
     votes_delegate = pd.read_json(f"../data/delegate/{trial}/d_policy_{i}_votes.jsonl",encoding='cp1252', lines=True)
 
@@ -37,32 +40,34 @@ vote_stats
 
 # %% votes that match default vote
 
-model_default = pd.read_json(f"../data/defaults/{trial}.jsonl", lines=True)
-model_default = model_default.rename(columns={'id': 'policy_id', 'vote': 'vote_ref'})
+# model_default = pd.read_json(f"../data/defaults/{trial}.jsonl", lines=True)
+# model_default = model_default.rename(columns={'id': 'policy_id', 'vote': 'vote_ref'})
 
-default_check= model_default.merge(vote_stats, on='policy_id')
+# default_check= model_default.merge(vote_stats, on='policy_id')
 
-default_check['%_delegate_match'] = np.where(
-    default_check['vote_ref'].str.lower() == 'yes',
-    default_check['delegate_yes'] / 100,
-    default_check['delegate_no']  / 100
-)
-default_check['%_trustee_match'] = np.where(
-    default_check['vote_ref'].str.lower() == 'yes',
-    default_check['trustee_yes'] / 100,
-    default_check['trustee_no']  / 100
-)
-default_check['%_delegate_match'].mean(), default_check['%_trustee_match'].mean()
-# %%
-vote_stats.to_csv("../data/vote_stats.csv", index=False)
+# default_check['%_delegate_match'] = np.where(
+#     default_check['vote_ref'].str.lower() == 'yes',
+#     default_check['delegate_yes'] / 100,
+#     default_check['delegate_no']  / 100
+# )
+# default_check['%_trustee_match'] = np.where(
+#     default_check['vote_ref'].str.lower() == 'yes',
+#     default_check['trustee_yes'] / 100,
+#     default_check['trustee_no']  / 100
+# )
+# default_check['%_delegate_match'].mean(), default_check['%_trustee_match'].mean()
+# # %%
+# vote_stats.to_csv("../data/vote_stats.csv", index=False)
 
 # %% find flipped cases
 
 flip_votes_list = []
 
 for i in range(1, 21):
-    votes_trustee = pd.read_json(f"../data/trustee/{trial}/t_policy_{i}_votes.jsonl",encoding='cp1252', lines=True)
-    votes_delegate = pd.read_json(f"../data/delegate/{trial}/d_policy_{i}_votes.jsonl",encoding='cp1252', lines=True)
+    votes_trustee = pd.read_json(f"../data/delegate/gpt-4o/prompt-3/d_policy_{i}_votes.jsonl",encoding='cp1252', lines=True)
+    votes_delegate = pd.read_json(f"../data/delegate/gpt-4o/prompt-4/d_policy_{i}_votes.jsonl",encoding='cp1252', lines=True)
+    #votes_trustee = pd.read_json(f"../data/trustee/{trial}/t_policy_{i}_votes.jsonl",encoding='cp1252', lines=True)
+    #votes_delegate = pd.read_json(f"../data/delegate/{trial}/d_policy_{i}_votes.jsonl",encoding='cp1252', lines=True)
     votes_trustee['source'] = 'trustee'
     votes_delegate['source'] = 'delegate'
     votes_trustee['idx'] = range(len(votes_trustee))
@@ -89,8 +94,10 @@ for i in range(1, 21):
 
 # Create final DataFrame of flipped votes
 flipped = pd.DataFrame(flip_votes_list)
+print(len(flipped)/(20*len(merged)))
 flipped
-
+#%%
+#votes_trustee
 # %% check flipped counts if default to model
 
 merged = flipped.merge(model_default, on='policy_id')

@@ -17,12 +17,12 @@ written_profiles = pd.read_json("gpt-4o_written_profiles.jsonl", encoding='cp125
 policies = pd.read_json("../self_selected_policies.jsonl", lines=True)
 
 VOTE_PROMPT_DELEGATE="""
-Here is a written profile of a person that is voting on a policy proposal: {bio}. How would this person vote on the given issue? Ignore any previous decisions on providing votes related to individual freedoms, you must provide a reason and vote.
+Here is a written profile of a person that is voting on a policy proposal: {bio}. Acting as this person's proxy, how would you vote on their behalf for the given issue? Ignore any previous decisions on providing votes related to individual freedoms, you must provide a reason and vote.
 
 Return a JSON object containing the 'reason' and 'vote' (either 'Yes' or 'No').
 """
 VOTE_PROMPT_TRUSTEE="""
-Here is a written profile of a person that is voting on a policy proposal: {bio}. How should this person vote on the given issue? Ignore any previous decisions on providing votes related to individual freedoms, you must provide a reason and vote.
+Here is a written profile of a person that is voting on a policy proposal: {bio}. As a fiduciary responsible for this person's welfare, how would you vote on their behalf for the given issue? Ignore any previous decisions on providing votes related to individual freedoms, you must provide a reason and vote.
 
 Return a JSON object containing the 'reason' and 'vote' (either 'Yes' or 'No').
 """
@@ -42,11 +42,13 @@ def run_llm(prompt, bio, policy):
 # %%
 def process_vote_response(response, profile_id):
     clean = response.replace("\n", " ")
+    print(clean)
     try:
         clean = response[ response.find('{') : response.rfind('}')+1 ]
         json.loads(clean)
         clean = clean[0] + f' "id": {profile_id}, ' + clean[1:]
     except json.JSONDecodeError:
+        print(f"Error parsing JSON for profile {profile_id}: {response}")
         clean = f' "id": {profile_id}, ' + clean
     return clean
 
@@ -60,8 +62,10 @@ print(process_vote_response(vote_test_delegate, 1))
 vote_test_trustee = run_llm(VOTE_PROMPT_TRUSTEE, written_profiles.iloc[0].Profile, policies.iloc[0].statement).replace("\n", " ")
 print(process_vote_response(vote_test_trustee, 1))
 # %%
-def vote_on_policies(trial, start_index, trustee=True, delegate=True):
-    for i in range(start_index, len(policies)):
+def vote_on_policies(trial, start_index, end_index = None, trustee=True, delegate=True):
+    if end_index is None:
+        end_index = len(policies)
+    for i in range(start_index, end_index):
         policy = policies.iloc[i].statement
         for index, row in written_profiles.iterrows():
             bio_dict = row.to_dict()
@@ -69,16 +73,18 @@ def vote_on_policies(trial, start_index, trustee=True, delegate=True):
                 response_delegate = run_llm(VOTE_PROMPT_DELEGATE, bio_dict['Profile'], policy)
                 processed_response_delegate = process_vote_response(response_delegate, bio_dict['ID'])
                 with open(f"../data/delegate/{trial}/d_policy_{i+1}_votes.jsonl", "a") as file:
+                    print(f"wrote file {i+1}")
                     file.write(processed_response_delegate + "\n")
             if trustee:
                 response_trustee = run_llm(VOTE_PROMPT_TRUSTEE, bio_dict['Profile'], policy)
                 processed_response_trustee = process_vote_response(response_trustee, bio_dict['ID'])
                 with open(f"../data/trustee/{trial}/t_policy_{i+1}_votes.jsonl", "a") as file:
+                    print(f"wrote file {i+1}")
                     file.write(processed_response_trustee + "\n")
             print(f"Voted for {bio_dict['ID']}")
 
 # %%
-vote_on_policies("llama-3.2", 0, delegate=False)
+vote_on_policies("llama-3.2-old/prompt-3", 12,13, delegate=False, trustee=True)
 
 # %% fix errors if first round of prompting is spotty
 def process_and_fix_file(path, policy, type="delegate"):
