@@ -4,6 +4,7 @@ import numpy as np
 from itertools import product
 from itertools import combinations
 from load_pairwise_data import load_pairwise_data
+from tqdm import tqdm
 #%%
 
 policies = pd.read_json("../self_selected_policies.jsonl", lines=True)
@@ -12,8 +13,8 @@ policies.head()
 #%%
 policies.shape
 #%%
-#base_llm = "gpt-4o"
-base_llm = "claude-3-sonnet-v2"
+base_llm = "gpt-4o"
+#base_llm = "claude-3-sonnet-v2"
 #base_llm = "llama-3.2"
 prompts = ["prompt-0", "prompt-1", "prompt-2", "prompt-3", "prompt-4"]
 #prompts = ["prompt-3", "prompt-4"]
@@ -62,8 +63,7 @@ def replace_roles_for_combination(data, chosen_prompts):
 
 # %%
 all_diff_mean_flips = []
-for i, chosen_prompts in enumerate(eight_prompts_combinations):
-    print(f"Processing {i+1}/{len(eight_prompts_combinations)}")
+for i, chosen_prompts in tqdm(enumerate(eight_prompts_combinations)):
     modified_data = replace_roles_for_combination(all_data, chosen_prompts)
     mean_flips = modified_data.groupby(["same_condition"]).flipped.mean()
     diff_mean_flips = mean_flips[False] - mean_flips[True]
@@ -74,12 +74,19 @@ all_diff_mean_flips = np.array(all_diff_mean_flips)
 import matplotlib.pyplot as plt
 
 plt.figure(figsize=(10, 6))
+ax = plt.gca()
+ax.spines['top'].set_visible(False)
+ax.spines['right'].set_visible(False)
 plt.hist(all_diff_mean_flips, bins=30, alpha=0.7, color='skyblue', edgecolor='black')
-plt.axvline(x=diff_mean_flips_original, color='red', linestyle='--', label='Original Difference')
+plt.axvline(x=diff_mean_flips_original, color='red', linestyle='--', 
+label='Test Difference')
 plt.xlabel('Difference in Mean Flips (Different - Same Condition)')
 plt.ylabel('Frequency')
-plt.title('Distribution of Mean Flip Differences Across Prompt Combinations')
+plt.title('Cross-condition - Same-condition Vote Disagreements')
 plt.legend()
 plt.show()
+
+# %%
+sum(all_diff_mean_flips > diff_mean_flips_original) / len(all_diff_mean_flips)
 
 # %%
