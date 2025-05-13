@@ -13,7 +13,7 @@ policies.head()
 policies.shape
 #%%
 #base_llm = "gpt-4o"
-base_llm = "claude-3-sonnet-v2"
+base_llm = "gpt-4o"
 #base_llm = "llama-3.2"
 prompts = ["prompt-0", "prompt-1", "prompt-2", "prompt-3", "prompt-4"]
 #prompts = ["prompt-3", "prompt-4"]
@@ -82,8 +82,4 @@ plt.title('Distribution of Mean Flip Differences Across Prompt Combinations')
 plt.legend()
 plt.show()
 
-# %%
-chosen_prompts
-# %%
-modified_data
 # %%
