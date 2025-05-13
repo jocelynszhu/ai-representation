@@ -7,9 +7,9 @@ import os
 #df
 #%%
 num_policies = 20
-model = 'claude-3-sonnet'
+model = 'claude-3-sonnet-v2'
 delegate_or_trustee = ['delegate', 'trustee']
-prompt = 'prompt-4'
+prompt = 'prompt-3'
 for policy in range(num_policies):
     print(f'Processing policy {policy+1} of {num_policies}')
     for do_t in delegate_or_trustee:

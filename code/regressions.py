@@ -123,7 +123,8 @@ def plot_coefficients(coef_df, title="Regression Coefficients with 95% Confidenc
 # Example usage
 #%%
     # Load data
-base_llm = "gpt-4o"
+#base_llm = "gpt-4o"
+base_llm = "claude-3-sonnet-v2"
 prompts = ["prompt-0", "prompt-1", "prompt-2", "prompt-3", "prompt-4"]
 policies_to_ignore = None
 all_data = load_pairwise_data(base_llm, prompts, policies_to_ignore=policies_to_ignore)
@@ -151,5 +152,4 @@ if model is not None:
     plot_coefficients(coef_df, title="Regression Coefficients (prompt-0 vs prompt-1)")
     print(model_summary)
 #%%
-prompt_two
 # %%

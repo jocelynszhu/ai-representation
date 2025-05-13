@@ -1,4 +1,15 @@
-votes = load_votes("gpt-4o", ["prompt-1", "prompt-2", "prompt-3", "prompt-4"])
+
+
+#%%
+import pandas as pd
+import numpy as np
+from itertools import product
+from itertools import combinations
+import matplotlib.pyplot as plt
+import seaborn as sns
+from load_pairwise_data import load_votes
+#%%
+votes = load_votes("claude-3-sonnet-v2", ["prompt-1", "prompt-2", "prompt-3", "prompt-4"])
 #%%
 biographies = pd.read_json("rep_biographies.jsonl", lines=True)\
     .rename(columns={"ID": "id"})
@@ -68,3 +79,5 @@ def plot_variance_comparison():
 
 # Call the function to create the plot
 plot_variance_comparison()
+
+# %%

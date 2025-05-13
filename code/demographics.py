@@ -6,8 +6,8 @@ from load_pairwise_data import load_pairwise_data
 import matplotlib.pyplot as plt
 import seaborn as sns
 # %%
-base_llm = "gpt-4o"
-#base_llm = "claude-3-sonnet"
+#base_llm = "gpt-4o"
+base_llm = "claude-3-sonnet-v2"
 #$base_llm = "llama-3.2"
 prompts = ["prompt-0", "prompt-1", "prompt-2", "prompt-3", "prompt-4"]
 #$rompts = [ "prompt-3", "prompt-4"]
