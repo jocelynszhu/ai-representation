@@ -84,7 +84,7 @@ def plot_variance_comparison(model_variance_dict, show_labels=True):
     plt.show()
     
     # Save the plot
-    plt.savefig('variance_comparison_plot.png', dpi=300, bbox_inches='tight')
+    plt.savefig('../data/plots/variance_comparison_plot.png', dpi=300, bbox_inches='tight')
     plt.close()
     return model_stats
 
