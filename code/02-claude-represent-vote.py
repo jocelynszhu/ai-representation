@@ -12,7 +12,7 @@ def parse_args():
     parser = argparse.ArgumentParser(description='Run voting simulation with Claude model')
     parser.add_argument('--prompt-num', type=int, required=True, help='Number of the prompt to use from prompts.json')
     parser.add_argument('--trial', type=str, required=True, help='Name of the trial (e.g., claude-3-sonnet/prompt-1)')
-    parser.add_argument('--start-index', type=int, default=0, help='Starting index for policies (default: 0)')
+    parser.add_argument('--start-index', type=int, default=12, help='Starting index for policies (default: 0)')
     return parser.parse_args()
 
 def load_prompts():

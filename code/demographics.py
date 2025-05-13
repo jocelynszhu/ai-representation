@@ -8,7 +8,9 @@ import seaborn as sns
 # %%
 base_llm = "gpt-4o"
 #base_llm = "claude-3-sonnet"
+#$base_llm = "llama-3.2"
 prompts = ["prompt-0", "prompt-1", "prompt-2", "prompt-3", "prompt-4"]
+#$rompts = [ "prompt-3", "prompt-4"]
 policies_to_ignore = None
 all_data = load_pairwise_data(base_llm, prompts, policies_to_ignore=policies_to_ignore)
 # %%

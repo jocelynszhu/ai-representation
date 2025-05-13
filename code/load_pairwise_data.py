@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 # %%
 # %%
-def get_pairs(prompt1, prompt2, base_llm, policies_to_ignore=None):
+def get_pairs(prompt1, prompt2, base_llm, policies_to_ignore=None, num_policies=20):
     """Compute the percentage of flipped votes between two trials.
     
     Args:
@@ -21,7 +21,7 @@ def get_pairs(prompt1, prompt2, base_llm, policies_to_ignore=None):
     prompt2_type = prompt2[1]
 
     all_data = []
-    for i in range(1, 21):
+    for i in range(1, num_policies + 1):
         if policies_to_ignore is not None and i in policies_to_ignore:
             print(f"Skipping policy {i} because it is in the ignore list")
             continue
@@ -29,16 +29,19 @@ def get_pairs(prompt1, prompt2, base_llm, policies_to_ignore=None):
         # Load votes for both trials
         try:
             votes1 = pd.read_json(f"../data/{prompt1_type}/{base_llm}/{prompt1_name}/{prompt1_type[0]}_policy_{i}_votes.jsonl", encoding='cp1252', lines=True)
-        except:
-            print(f"File not found: {prompt1_type}/{base_llm}/{prompt1_name}/{prompt1_type[0]}_policy_{i}_votes.jsonl")
-            raise Exception(f"File not found: {prompt1_type}/{base_llm}/{prompt1_name}/{prompt1_type[0]}_policy_{i}_votes.jsonl")
+        except Exception as e:
+            print(e)
+            raise e
+            #print(f"File not found: {prompt1_type}/{base_llm}/{prompt1_name}/{prompt1_type[0]}_policy_{i}_votes.jsonl")
+            #raise Exception(f"File not found: {prompt1_type}/{base_llm}/{prompt1_name}/{prompt1_type[0]}_policy_{i}_votes.jsonl")
           #  continue
         try:
             votes2 = pd.read_json(f"../data/{prompt2_type}/{base_llm}/{prompt2_name}/{prompt2_type[0]}_policy_{i}_votes.jsonl", encoding='cp1252', lines=True)
-        except:
-            print(f"File not found: {prompt2_type}/{base_llm}/{prompt2_name}/{prompt2_type[0]}_policy_{i}_votes.jsonl")
-            raise Exception(f"File not found: {prompt2_type}/{base_llm}/{prompt2_name}/{prompt2_type[0]}_policy_{i}_votes.jsonl")
-        
+        except Exception as e:
+            print(e)
+            raise e
+            #print(f"File not found: {prompt2_type}/{base_llm}/{prompt2_name}/{prompt2_type[0]}_policy_{i}_votes.jsonl")
+            #
         # Add source and index columns
         votes1['source'] = prompt1_type
         votes2['source'] = prompt2_type
@@ -64,14 +67,14 @@ def get_pairs(prompt1, prompt2, base_llm, policies_to_ignore=None):
     all_data_df["combined_prompt_name_2"] = all_data_df["prompt2"] + "_" + all_data_df["source_2"]
     return all_data_df
 #%%
-def load_pairwise_data(base_llm, prompts, policies_to_ignore=None):
+def load_pairwise_data(base_llm, prompts, policies_to_ignore=None, num_policies=20):
     prompt_types = ["delegate", "trustee"]
     all_prompts = [(prompt, prompt_type) for prompt, prompt_type in product(prompts, prompt_types)]
     combinations_prompts = list(combinations(all_prompts, 2))
     all_data = []
     for prompt1, prompt2 in combinations_prompts:
         #print(prompt1, prompt2)
-        data = get_pairs(prompt1, prompt2, base_llm,  policies_to_ignore=policies_to_ignore)
+        data = get_pairs(prompt1, prompt2, base_llm, policies_to_ignore=policies_to_ignore, num_policies=num_policies)
         all_data.append(data)
     all_data = pd.concat(all_data)
     return all_data
