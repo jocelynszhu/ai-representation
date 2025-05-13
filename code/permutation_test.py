@@ -5,31 +5,45 @@ from itertools import product
 from itertools import combinations
 from load_pairwise_data import load_pairwise_data
 from tqdm import tqdm
+import os
+import json
+import matplotlib.pyplot as plt
 #%%
 
-policies = pd.read_json("../self_selected_policies.jsonl", lines=True)
-#%%
-policies.head()
-#%%
-policies.shape
-#%%
-base_llm = "gpt-4o"
-#base_llm = "claude-3-sonnet-v2"
-#base_llm = "llama-3.2"
-prompts = ["prompt-0", "prompt-1", "prompt-2", "prompt-3", "prompt-4"]
-#prompts = ["prompt-3", "prompt-4"]
-all_data = load_pairwise_data(base_llm, prompts, policies_to_ignore=None, num_policies=12)
-# %%
-mean_flips = all_data.groupby(["same_condition"]).flipped.mean()
-diff_mean_flips_original = mean_flips[False] - mean_flips[True]
-diff_mean_flips_original
-#%%
-eight_prompts_one = set(all_data["combined_prompt_name_1"].unique())
-eight_prompts_two = set(all_data["combined_prompt_name_2"].unique())
-eight_prompts = list(eight_prompts_one | eight_prompts_two)
-eight_prompts_combinations = list(combinations(eight_prompts, 4))
-#%%
-# %%
+def run_permutation_test(model_name):
+    """
+    Run permutation test for a given model and save results.
+    
+    Args:
+        model_name: Name of the model to run the test for
+        
+    Returns:
+        tuple: (all_diff_mean_flips, diff_mean_flips_original)
+    """
+    policies = pd.read_json("../self_selected_policies.jsonl", lines=True)
+    prompts = ["prompt-0", "prompt-1", "prompt-2", "prompt-3", "prompt-4"]
+    all_data = load_pairwise_data(model_name, prompts, policies_to_ignore=None, num_policies=12)
+    
+    # Calculate original test statistic
+    mean_flips = all_data.groupby(["same_condition"]).flipped.mean()
+    diff_mean_flips_original = mean_flips[False] - mean_flips[True]
+    
+    # Get all prompt combinations
+    eight_prompts_one = set(all_data["combined_prompt_name_1"].unique())
+    eight_prompts_two = set(all_data["combined_prompt_name_2"].unique())
+    eight_prompts = list(eight_prompts_one | eight_prompts_two)
+    eight_prompts_combinations = list(combinations(eight_prompts, 4))
+    
+    # Run permutation test
+    all_diff_mean_flips = []
+    for chosen_prompts in tqdm(eight_prompts_combinations, desc=f"Running permutations for {model_name}"):
+        modified_data = replace_roles_for_combination(all_data, chosen_prompts)
+        mean_flips = modified_data.groupby(["same_condition"]).flipped.mean()
+        diff_mean_flips = mean_flips[False] - mean_flips[True]
+        all_diff_mean_flips.append(diff_mean_flips)
+    
+    return np.array(all_diff_mean_flips), diff_mean_flips_original
+
 def replace_roles_for_combination(data, chosen_prompts):
     """
     For a given combination of 4 prompts, replace the roles:
@@ -42,7 +56,6 @@ def replace_roles_for_combination(data, chosen_prompts):
     """
     # Create a copy to avoid modifying original
     modified_data = data.copy()
-    
     
     # Replace source_1 roles
     modified_data['source_1'] = modified_data.apply(
@@ -61,32 +74,74 @@ def replace_roles_for_combination(data, chosen_prompts):
     
     return modified_data
 
-# %%
-all_diff_mean_flips = []
-for i, chosen_prompts in tqdm(enumerate(eight_prompts_combinations)):
-    modified_data = replace_roles_for_combination(all_data, chosen_prompts)
-    mean_flips = modified_data.groupby(["same_condition"]).flipped.mean()
-    diff_mean_flips = mean_flips[False] - mean_flips[True]
-    all_diff_mean_flips.append(diff_mean_flips)
-# %%
-all_diff_mean_flips = np.array(all_diff_mean_flips)
-# %%
-import matplotlib.pyplot as plt
+def save_results(all_diff_mean_flips, diff_mean_flips_original, model_name):
+    """
+    Save the numerical results.
+    """
+    # Create model-specific directory
+    model_dir = f"../data/perm_test/{model_name}"
+    os.makedirs(model_dir, exist_ok=True)
+    
+    # Calculate p-value
+    p_value = sum(all_diff_mean_flips > diff_mean_flips_original) / len(all_diff_mean_flips)
+    
+    # Save the data
+    np.save(f"{model_dir}/all_diff_mean_flips.npy", all_diff_mean_flips)
+    with open(f"{model_dir}/test_statistic.json", 'w') as f:
+        json.dump({
+            "diff_mean_flips_original": float(diff_mean_flips_original),
+            "p_value": float(p_value)
+        }, f)
+    
+    return p_value
 
-plt.figure(figsize=(10, 6))
-ax = plt.gca()
-ax.spines['top'].set_visible(False)
-ax.spines['right'].set_visible(False)
-plt.hist(all_diff_mean_flips, bins=30, alpha=0.7, color='skyblue', edgecolor='black')
-plt.axvline(x=diff_mean_flips_original, color='red', linestyle='--', 
-label='Test Difference')
-plt.xlabel('Difference in Mean Flips (Different - Same Condition)')
-plt.ylabel('Frequency')
-plt.title('Cross-condition - Same-condition Vote Disagreements')
-plt.legend()
-plt.show()
+def plot_all_results(models, clean_name_mapping):
+    """
+    Create a single figure with three subplots in a row for all models.
+    Reads data from saved files.
+    
+    Args:
+        models: List of model names to plot
+    """
+    fig, axes = plt.subplots(1, 3, figsize=(18, 6))
+    
+    for model_name, ax in zip(models, axes):
+        # Load the data
+        model_dir = f"../data/perm_test/{model_name}"
+        all_diff_mean_flips = np.load(f"{model_dir}/all_diff_mean_flips.npy")
+        with open(f"{model_dir}/test_statistic.json", 'r') as f:
+            stats = json.load(f)
+            diff_mean_flips_original = stats["diff_mean_flips_original"]
+            p_value = stats["p_value"]
+        
+        # Create the plot
+        ax.hist(all_diff_mean_flips, bins=30, alpha=0.7, color='skyblue', edgecolor='black')
+        ax.axvline(x=diff_mean_flips_original, color='red', linestyle='--', 
+                  label='Test Statistic Value')
+        ax.set_xlabel('Difference in Percentage of Changed Votes\n(Different - Same Condition)')
+        ax.set_ylabel('Frequency')
+        model_name = clean_name_mapping[model_name]
+        ax.set_title(f'{model_name}\np = {p_value:.3f}')
+        ax.spines['top'].set_visible(False)
+        ax.spines['right'].set_visible(False)
+        ax.legend()
+    
+    plt.tight_layout()
+    plt.savefig("../data/perm_test/combined_permutation_test_plot.png", dpi=300, bbox_inches='tight')
+    plt.close()
 
-# %%
-sum(all_diff_mean_flips > diff_mean_flips_original) / len(all_diff_mean_flips)
+# Run permutation test for each model
+models = ["gpt-4o", "claude-3-sonnet-v2", "llama-3.2"]
+
+# for model in models:
+#     print(f"\nRunning permutation test for {model}")
+#     all_diff_mean_flips, diff_mean_flips_original = run_permutation_test(model)
+#     p_value = save_results(all_diff_mean_flips, diff_mean_flips_original, model)
+#     print(f"P-value for {model}: {p_value}")
+#%%
+models = ["llama-3.2", "gpt-4o", "claude-3-sonnet-v2"]
+# Create combined plot from saved data
+clean_name_mapping = json.load(open("../clean_name_mapping.json"))
+plot_all_results(models, clean_name_mapping)
 
 # %%
