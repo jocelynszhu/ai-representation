@@ -113,6 +113,7 @@ for model_name, stats in model_stats.items():
 single = model_variance_dict["Llama"]
 delegates = single[single["source"] == "delegate"]
 trustees = single[single["source"] == "trustee"]
+delegates.groupby(["prompt"]).agg({"var": "mean"}).reset_index()
 #%%
 # # Calculate percentage of policies where delegate variance is higher than trustee variance
 # gpt_delegate_higher = (model_stats["GPT-4"][('mean', 'delegate')] > model_stats["GPT-4"][('mean', 'trustee')]).sum() / len(model_stats["GPT-4"])
