@@ -56,9 +56,15 @@ def get_pairs(prompt1, prompt2, base_llm, policies_to_ignore=None, num_policies=
             (~merged['vote_1'].isin(['NA', 'na', 'N/A', 'n/a'])) & 
             (~merged['vote_2'].isin(['NA', 'na', 'N/A', 'n/a']))
         ]
+        # Filter out votes that aren't Yes or No
+        merged = merged[
+            (merged['vote_1'].isin(['Yes', 'No'])) & 
+            (merged['vote_2'].isin(['Yes', 'No']))
+        ]
         # Print number of rows removed due to NA votes
         num_removed = len(votes1) - len(merged)
-      #  print(f"Removed {num_removed} rows with NA votes")
+        if num_removed > 0:
+            print(f"Removed {num_removed} rows with NA votes")
         merged['flipped'] = merged['vote_1'] != merged['vote_2']
         all_data.append(merged)
     all_data_df = pd.concat(all_data)
@@ -101,7 +107,9 @@ def load_votes(base_llm, prompts, policies_to_ignore=None):
                 print(f"File not found: {base_llm}/{prompt}/")
                 raise Exception(f"File not found: {base_llm}/{prompt}/")
     all_data = pd.concat(all_data)
-    return all_data
+    all_data_filtered = all_data[all_data["vote"].isin(["Yes", "No"])]
+    print(f"Removed {len(all_data) - len(all_data_filtered)} rows with non-Yes/No votes")
+    return all_data_filtered
 #%%
 
 # %%

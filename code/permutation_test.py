@@ -133,11 +133,11 @@ def plot_all_results(models, clean_name_mapping):
 # Run permutation test for each model
 models = ["gpt-4o", "claude-3-sonnet-v2", "llama-3.2"]
 
-# for model in models:
-#     print(f"\nRunning permutation test for {model}")
-#     all_diff_mean_flips, diff_mean_flips_original = run_permutation_test(model)
-#     p_value = save_results(all_diff_mean_flips, diff_mean_flips_original, model)
-#     print(f"P-value for {model}: {p_value}")
+for model in models:
+    print(f"\nRunning permutation test for {model}")
+    all_diff_mean_flips, diff_mean_flips_original = run_permutation_test(model)
+    p_value = save_results(all_diff_mean_flips, diff_mean_flips_original, model)
+    print(f"P-value for {model}: {p_value}")
 #%%
 models = ["llama-3.2", "gpt-4o", "claude-3-sonnet-v2"]
 # Create combined plot from saved data
