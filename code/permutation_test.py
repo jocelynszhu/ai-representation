@@ -22,7 +22,7 @@ def run_permutation_test(model_name):
     """
     policies = pd.read_json("../self_selected_policies.jsonl", lines=True)
     prompts = ["prompt-0", "prompt-1", "prompt-2", "prompt-3", "prompt-4"]
-    all_data = load_pairwise_data(model_name, prompts, policies_to_ignore=None, num_policies=12)
+    all_data = load_pairwise_data(model_name, prompts, policies_to_ignore=None, num_policies=20)
     
     # Calculate original test statistic
     mean_flips = all_data.groupby(["same_condition"]).flipped.mean()
@@ -129,9 +129,25 @@ def plot_all_results(models, clean_name_mapping):
     plt.tight_layout()
     plt.savefig("../data/perm_test/combined_permutation_test_plot.png", dpi=300, bbox_inches='tight')
     plt.close()
+#%%
+
+models = ["llama-3.2", "gpt-4o", "claude-3-sonnet-v2"]
+prompts = ["prompt-0", "prompt-1", "prompt-2", "prompt-3", "prompt-4"]
+policies_to_ignore = None
+all_cross_data = []
+for model in models:
+    data = load_pairwise_data(model, prompts, policies_to_ignore=policies_to_ignore)
+    cross_data = data[data["same_condition"] == False].assign(model=model)
+    all_cross_data.append(cross_data)
+all_cross_data = pd.concat(all_cross_data)
+#%%
+by_model_pair = all_cross_data.groupby(["model", "combined_prompt_name_1", "combined_prompt_name_2"]).flipped.mean()\
+    .reset_index()
+# %%
+by_model_pair.groupby("model").flipped.mean()
+# %%
 
 # Run permutation test for each model
-models = ["gpt-4o", "claude-3-sonnet-v2", "llama-3.2"]
 
 for model in models:
     print(f"\nRunning permutation test for {model}")
@@ -139,7 +155,6 @@ for model in models:
     p_value = save_results(all_diff_mean_flips, diff_mean_flips_original, model)
     print(f"P-value for {model}: {p_value}")
 #%%
-models = ["llama-3.2", "gpt-4o", "claude-3-sonnet-v2"]
 # Create combined plot from saved data
 clean_name_mapping = json.load(open("../clean_name_mapping.json"))
 plot_all_results(models, clean_name_mapping)

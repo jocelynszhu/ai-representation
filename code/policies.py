@@ -21,7 +21,7 @@ def process_data(all_data, biographies_path="rep_biographies.jsonl"):
     simple = joined.copy()
     simple = simple.rename({"Political Affiliation": "political_affiliation"})
     simple["flipped"] = simple["flipped"].astype(int)
-    simple = simple[simple.same_condition == False]
+    simple = simple[simple.same_condition == True]
     
     return simple
 
@@ -213,44 +213,48 @@ grouped_merged = grouped.merge(policies, on="policy_id", how="left")
 #%%
 # Calculate statistics and create plot
 stats, policy_order = calculate_flip_stats(grouped_merged)
-create_flip_plot(stats, policy_order)
+# create_flip_plot(stats, policy_order)
 
 #%%
 # Prepare and create table
 pivoted, mean_across_models = prepare_stats_table(stats)
 latex_output = create_latex_table(pivoted)
 print(latex_output)
-with open('../data/latex/flip_rates_table.tex', 'w') as f:
-    f.write(latex_output)
+# with open('../data/latex/flip_rates_table.tex', 'w') as f:
+#     f.write(latex_output)
 
 #%%
 # Analyze demographics
 demographic_results = analyze_demographics(simple)
 
 #%%
-stats = grouped_merged.groupby(['policy_id', 'statement', 'model'])[1].agg(['mean', 'std', 'count']).reset_index()
-stats['ci'] = 1.645 * (stats['std'] / np.sqrt(stats['count']))  # 95% CI = mean ± 1.96 * SE
+# stats = grouped_merged.groupby(['policy_id', 'statement', 'model'])[1].agg(['mean', 'std', 'count']).reset_index()
+# stats['ci'] = 1.645 * (stats['std'] / np.sqrt(stats['count']))  # 95% CI = mean ± 1.96 * SE
 
-# Filter for specified models if provided
-if models is not None:
-    stats = stats[stats['model'].isin(models)]
+# # Filter for specified models if provided
+# if models is not None:
+#     stats = stats[stats['model'].isin(models)]
 
-# Calculate average flip rate across models for sorting
-avg_flip_rates = stats.groupby('policy_id')['mean'].mean().sort_values(ascending=True)
-policy_order = avg_flip_rates.index.tolist()
-# %%
-grouped[grouped.isna().any(axis=1)].groupby("policy_id").count()
-# %%
-single_data = []
-for model in models.keys():
-    single_model_data = load_votes(models[model], prompts, policies_to_ignore)\
-        .assign(model=model)
-    single_data.append(single_model_data)
-# %%
-single_data = pd.concat(single_data, ignore_index=True)
-# %%
-votes_per_policy = single_data.groupby(["policy_id", "model"])["vote"].value_counts(normalize=True).unstack()
-absolutes = votes_per_policy[(votes_per_policy["No"] == 1) | (votes_per_policy["Yes"] == 1)]
-# %%
-absolutes
+# # Calculate average flip rate across models for sorting
+# avg_flip_rates = stats.groupby('policy_id')['mean'].mean().sort_values(ascending=True)
+# policy_order = avg_flip_rates.index.tolist()
+# # %%
+# grouped[grouped.isna().any(axis=1)].groupby("policy_id").count()
+# # %%
+# single_data = []
+# for model in models.keys():
+#     single_model_data = load_votes(models[model], prompts, policies_to_ignore)\
+#         .assign(model=model)
+#     single_data.append(single_model_data)
+# # %%
+# single_data = pd.concat(single_data, ignore_index=True)
+# # %%
+# votes_per_policy = single_data.groupby(["policy_id", "model"])["vote"].value_counts(normalize=True).unstack()
+# absolutes = votes_per_policy[(votes_per_policy["No"] == 1) | (votes_per_policy["Yes"] == 1)]
+# # %%
+# absolutes
+# # %%
+# votes_per_policy
+# # %%
+# grouped
 # %%
