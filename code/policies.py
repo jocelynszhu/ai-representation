@@ -258,3 +258,5 @@ demographic_results = analyze_demographics(simple)
 # # %%
 # grouped
 # %%
+pivoted
+# %%
