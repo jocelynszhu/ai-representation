@@ -46,6 +46,9 @@ def plot_variance_comparison(model_variance_dict, show_labels=True):
         axes = [axes]
     sns.set_style("whitegrid")
     
+    # Add suptitle
+    plt.suptitle("Variance of Votes in Delegate vs. Trustee Conditions", y=1.02, fontsize=14)
+    
     # Set the positions and width for the bars
     y_pos = np.arange(len(model_stats[first_model]))
     width = 0.35
@@ -76,13 +79,16 @@ def plot_variance_comparison(model_variance_dict, show_labels=True):
         else:
             ax.set_yticklabels([])
         ax.set_xlabel('Variance')
-        ax.set_title(f'{model_name} - Delegate vs Trustee Variance\nby Policy with Individual Observations')
+        ax.set_title(model_name)
         ax.legend()
+        
+        # Remove top and right spines
+        ax.spines['top'].set_visible(False)
+        ax.spines['right'].set_visible(False)
     
     # Adjust layout
     plt.tight_layout()
-    plt.show()
-    
+#    
     # Save the plot
     plt.savefig('../data/plots/variance_comparison_plot.png', dpi=300, bbox_inches='tight')
     plt.close()
@@ -91,9 +97,9 @@ def plot_variance_comparison(model_variance_dict, show_labels=True):
 # Example usage:
 prompts = ["prompt-1", "prompt-2", "prompt-3", "prompt-4"]
 models = {
-    "GPT-4": "gpt-4o",
+    "GPT-4o": "gpt-4o",
     "Claude": "claude-3-sonnet-v2",
-    "Llama": "llama-3.2"
+    "Llama 3.2": "llama-3.2"
 }
 
 # Load data for all models
@@ -108,9 +114,11 @@ model_stats = plot_variance_comparison(model_variance_dict)
 # Calculate statistics for each model
 for model_name, stats in model_stats.items():
     delegate_higher = (stats[('mean', 'delegate')] > stats[('mean', 'trustee')]).sum() / len(stats)
+    print(sum(list(stats[('mean', 'delegate')] > stats[('mean', 'trustee')].values)))
     print(f"{model_name}: {delegate_higher:.2%} of policies have higher delegate variance")
 #%%
-single = model_variance_dict["Llama"]
+#%%
+single = model_variance_dict["Llama 3.2"]
 delegates = single[single["source"] == "delegate"]
 trustees = single[single["source"] == "trustee"]
 delegates.groupby(["prompt"]).agg({"var": "mean"}).reset_index()
@@ -123,7 +131,7 @@ delegates.groupby(["prompt"]).agg({"var": "mean"}).reset_index()
 # print(f"Claude: {claude_delegate_higher:.2%} of policies have higher delegate variance")
 
 #%%
-by_group = model_variance_dict["GPT-4"].groupby(["vote"]).agg({'reason': 'count'}).reset_index()
+by_group = model_variance_dict["GPT-4o"].groupby(["vote"]).agg({'reason': 'count'}).reset_index()
 #%%
 # biographies = pd.read_json("rep_biographies.jsonl", lines=True)\
 #     .rename(columns={"ID": "id"})

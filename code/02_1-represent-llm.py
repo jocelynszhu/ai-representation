@@ -3,6 +3,8 @@ from dotenv import load_dotenv
 import pandas as pd
 load_dotenv()
 import os
+import anthropic
+
 from utils import *
 
 # %%
@@ -16,7 +18,7 @@ Return a JSON object containing the 'reason', and 'vote' (either 'Yes' or 'No').
 """
 
 # %%
-model = "llama3.2"
+model = "claude-3-sonnet"
 for i in range(len(policies)):
     policy = policies.iloc[i].statement
     policy_default = get_llm_response("", task, prompt=policy, model=model).replace("\n", " ")

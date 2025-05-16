@@ -23,7 +23,7 @@ def get_pairs(prompt1, prompt2, base_llm, policies_to_ignore=None, num_policies=
     all_data = []
     for i in range(1, num_policies + 1):
         if policies_to_ignore is not None and i in policies_to_ignore:
-            print(f"Skipping policy {i} because it is in the ignore list")
+          #  print(f"Skipping policy {i} because it is in the ignore list")
             continue
        # print(f"Processing policy {i}...")
         # Load votes for both trials
@@ -64,7 +64,8 @@ def get_pairs(prompt1, prompt2, base_llm, policies_to_ignore=None, num_policies=
         # Print number of rows removed due to NA votes
         num_removed = len(votes1) - len(merged)
         if num_removed > 0:
-            print(f"Removed {num_removed} rows with NA votes")
+            #print(f"Removed {num_removed} rows with NA votes")
+            continue
         merged['flipped'] = merged['vote_1'] != merged['vote_2']
         all_data.append(merged)
     all_data_df = pd.concat(all_data)
@@ -108,7 +109,7 @@ def load_votes(base_llm, prompts, policies_to_ignore=None):
                 raise Exception(f"File not found: {base_llm}/{prompt}/")
     all_data = pd.concat(all_data)
     all_data_filtered = all_data[all_data["vote"].isin(["Yes", "No"])]
-    print(f"Removed {len(all_data) - len(all_data_filtered)} rows with non-Yes/No votes")
+    #print(f"Removed {len(all_data) - len(all_data_filtered)} rows with non-Yes/No votes")
     return all_data_filtered
 #%%
 
