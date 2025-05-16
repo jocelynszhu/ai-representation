@@ -25,20 +25,22 @@ def run_permutation_test(model_name):
     all_data = load_pairwise_data(model_name, prompts, policies_to_ignore=None, num_policies=20)
     
     # Calculate original test statistic
-    mean_flips = all_data.groupby(["same_condition"]).flipped.mean()
+    mean_flips = all_data.groupby(["same_condition", "combined_prompt_name_1", "combined_prompt_name_2"]).flipped.mean()
+    mean_flips = mean_flips.groupby("same_condition").mean()
     diff_mean_flips_original = mean_flips[False] - mean_flips[True]
     
     # Get all prompt combinations
     eight_prompts_one = set(all_data["combined_prompt_name_1"].unique())
     eight_prompts_two = set(all_data["combined_prompt_name_2"].unique())
     eight_prompts = list(eight_prompts_one | eight_prompts_two)
-    eight_prompts_combinations = list(combinations(eight_prompts, 4))
-    
+    eight_prompts_combinations = list(combinations(eight_prompts, 5))
+    print(eight_prompts_combinations)
     # Run permutation test
     all_diff_mean_flips = []
     for chosen_prompts in tqdm(eight_prompts_combinations, desc=f"Running permutations for {model_name}"):
         modified_data = replace_roles_for_combination(all_data, chosen_prompts)
-        mean_flips = modified_data.groupby(["same_condition"]).flipped.mean()
+        mean_flips = modified_data.groupby(["same_condition", "combined_prompt_name_1", "combined_prompt_name_2"]).flipped.mean()
+        mean_flips = mean_flips.groupby("same_condition").mean()
         diff_mean_flips = mean_flips[False] - mean_flips[True]
         all_diff_mean_flips.append(diff_mean_flips)
     
