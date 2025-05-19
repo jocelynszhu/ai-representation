@@ -85,8 +85,7 @@ def save_results(all_diff_mean_flips, diff_mean_flips_original, model_name):
     os.makedirs(model_dir, exist_ok=True)
     
     # Calculate p-value
-    p_value = sum(all_diff_mean_flips > diff_mean_flips_original) / len(all_diff_mean_flips)
-    
+    p_value = sum(all_diff_mean_flips >= diff_mean_flips_original) / len(all_diff_mean_flips)
     # Save the data
     np.save(f"{model_dir}/all_diff_mean_flips.npy", all_diff_mean_flips)
     with open(f"{model_dir}/test_statistic.json", 'w') as f:
@@ -133,7 +132,7 @@ def plot_all_results(models, clean_name_mapping):
     plt.close()
 #%%
 
-models = ["llama-3.2", "gpt-4o", "claude-3-sonnet-v2"]
+models = ["claude-3-sonnet-v2", "llama-3.2", "gpt-4o"]
 prompts = ["prompt-0", "prompt-1", "prompt-2", "prompt-3", "prompt-4"]
 policies_to_ignore = None
 all_cross_data = []

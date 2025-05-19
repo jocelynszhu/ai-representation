@@ -14,7 +14,7 @@ def compute_bias(model):
     default_votes = default_votes.rename(columns={"vote": "default_vote"})
 
     data_merged = data.merge(default_votes, on="policy_id", how="left")
-    flipped_votes = data_merged[~(data_merged["flipped"]) & ~(data_merged["same_condition"])]
+    flipped_votes = data_merged[data_merged["flipped"] & ~(data_merged["same_condition"])]
 
     for index, row in flipped_votes.iterrows():
         if row["source_1"] == "delegate":
@@ -34,7 +34,7 @@ def compute_bias(model):
 
 
 #%%
-models = ["gpt-4o", "llama-3.2"]
+models = ["gpt-4o", "llama-3.2", "claude-3-sonnet"]
 for model in models:
     print(model)
     print(compute_bias(model))
