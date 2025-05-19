@@ -109,7 +109,7 @@ def plot_all_results(models, clean_name_mapping):
         clean_name_mapping: Dict mapping internal model names to clean display names
     """
     fig, axes = plt.subplots(1, 3, figsize=(18, 6))  # No shared axes
-    fig.suptitle("Permutation Test Distribution", fontsize=16, y=0.9)
+    fig.suptitle("Permutation Test Distribution", fontsize=16, y=0.9, x=0.53)
 
     for idx, (model_name, ax) in enumerate(zip(models, axes)):
         # Load the data
@@ -128,11 +128,14 @@ def plot_all_results(models, clean_name_mapping):
 
         # Model title
         model_display = clean_name_mapping[model_name]
-        ax.set_title(f'{model_display}', fontsize=12)
+        ax.set_title(f'{model_display}', fontsize=12, pad=10)
 
-        # p-value annotation inside plot (top right corner)
-        ax.text(0.8, 0.95, f'P-Value: {p_value:.3f}', ha='right', va='top',
-                transform=ax.transAxes, fontsize=10)
+        # P-value centered below title
+        ax.text(0.5, 1, f'p-value: {p_value:.3f}',
+                transform=ax.transAxes,
+                ha='center', va='top',
+                fontsize=10,
+                bbox=dict(boxstyle='round,pad=0.3', facecolor='white', edgecolor='gray'))
 
         # Clean styling
         ax.spines['top'].set_visible(False)
