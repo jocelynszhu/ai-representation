@@ -13,7 +13,7 @@ load_dotenv()
 
 # %%
 # Configuration - modify these to test different combinations
-policy_index = 0  # Which policy to test (0-based index)
+policy_index = 2  # Which policy to test (0-based index)
 user_index = 0    # Which user profile to test (0-based index)
 prompt_type = "trustee_ls"  # "delegate_ls" or "trustee_ls"
 
@@ -183,9 +183,11 @@ def predict_all_users_for_policy(policy_index, prompt_type="trustee_ls", model_n
     print(f"Processing policy {policy_index + 1}: {policy}")
     print(f"Saving to: {output_file}")
     print(f"Processing {len(users_to_process)} users...")
+    print("=" * 60)
 
     # Open file for immediate writing
     results = []
+    errors = []
     with open(output_file, 'w') as f:
         # Process each user
         for idx, row in users_to_process.iterrows():
@@ -193,6 +195,8 @@ def predict_all_users_for_policy(policy_index, prompt_type="trustee_ls", model_n
             profile = row['Profile']
 
             try:
+                print(f"[{len(results)+1:3d}/{len(users_to_process)}] Processing user {user_id}...", end=" ")
+
                 # Get LLM response
                 response = run_claude(prompt, profile, policy)
 
@@ -213,8 +217,9 @@ def predict_all_users_for_policy(policy_index, prompt_type="trustee_ls", model_n
                     f.flush()  # Ensure it's written to disk
 
                     results.append(parsed)
+                    print("✓ Success")
 
-                except (json.JSONDecodeError, ValueError):
+                except (json.JSONDecodeError, ValueError) as e:
                     # If JSON parsing fails, create basic structure
                     result = {
                         'id': user_id,
@@ -226,17 +231,24 @@ def predict_all_users_for_policy(policy_index, prompt_type="trustee_ls", model_n
                     f.flush()  # Ensure it's written to disk
 
                     results.append(result)
+                    print(f"⚠ JSON parse failed, saved raw response")
 
+                # Progress summary every 10 users
                 if len(results) % 10 == 0:
-                    print(f"Processed {len(results)}/{len(users_to_process)} users")
+                    print(f"\n--- Progress: {len(results)}/{len(users_to_process)} completed ({len(results)/len(users_to_process)*100:.1f}%) ---")
+                    if errors:
+                        print(f"    Errors so far: {len(errors)} users")
+                    print()
 
             except Exception as e:
-                print(f"Error processing user {user_id}: {e}")
+                error_msg = f"User {user_id}: {str(e)}"
+                errors.append(error_msg)
+                print(f"✗ ERROR: {e}")
                 continue
 
     print(f"Completed! Saved {len(results)} responses to {output_file}")
     return results
 
 # %%
-#predict_all_users_for_policy(policy_index, prompt_type, "claude-3-sonnet-v2", 0, n_users=10)
+predict_all_users_for_policy(policy_index, prompt_type, "claude-3-sonnet-v2", 0, n_users=None)
 # %%

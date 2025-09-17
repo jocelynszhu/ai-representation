@@ -11,7 +11,7 @@ import numpy as np
 
 # %%
 # Configuration
-policy_index = 0  # Which policy to analyze (0-based index)
+policy_index = 2  # Which policy to analyze (0-based index)
 
 # %%
 # Load Data
@@ -74,7 +74,7 @@ def calculate_weighted_vote(parsed_response, long_term_weight):
 
 # %%
 # Delegate-Trustee Comparison Function
-def create_delegate_trustee_comparison(model, policy_index, long_term_weight, prompt_num=0):
+def create_delegate_trustee_comparison(model, policy_index, long_term_weight, trustee_prompt_num=0, delegate_prompt_num=0):
     """
     Create a comparison DataFrame of delegate vs trustee votes for a given policy.
 
@@ -82,18 +82,19 @@ def create_delegate_trustee_comparison(model, policy_index, long_term_weight, pr
         model (str): Model name (e.g., "claude-3-sonnet-v2")
         policy_index (int): 0-based policy index
         long_term_weight (float): Weight for long-term utility (0-1)
-        prompt_num (int): Prompt number (default 0)
+        trustee_prompt_num (int): Prompt number (default 0)
+        delegate_prompt_num (int): Prompt number (default 0)
 
     Returns:
         pd.DataFrame: Columns: participant_id, policy_id, delegate_vote, trustee_vote
     """
-    import os
+    import os   
 
     policy_id = policy_index + 1
 
     # File paths
-    delegate_file = f"../data/delegate/{model}/prompt-{prompt_num}/d_policy_{policy_id}_votes.jsonl"
-    trustee_file = f"../data/trustee_ls/{model}/prompt-{prompt_num}/t_policy_{policy_id}_votes.jsonl"
+    delegate_file = f"../data/delegate/{model}/prompt-{delegate_prompt_num}/d_policy_{policy_id}_votes.jsonl"
+    trustee_file = f"../data/trustee_ls/{model}/prompt-{trustee_prompt_num}/t_policy_{policy_id}_votes.jsonl"
 
     # Check if files exist
     if not os.path.exists(delegate_file):
@@ -158,95 +159,140 @@ def create_delegate_trustee_comparison(model, policy_index, long_term_weight, pr
     return comparison_df
 
 # %%
-# Disagreement Rate Analysis Function
-def plot_disagreement_by_weight(model, policy_index, prompt_num=0, show_plot=True):
+# Multi-Delegate Prompt Comparison Function
+def plot_disagreement_by_delegate_prompts(model, policy_index, delegate_prompt_nums, trustee_prompt_num=0, show_plot=True):
     """
-    Analyze disagreement rates between delegate and trustee votes across different long-term weights.
+    Compare disagreement patterns across different delegate prompts paired with the same trustee prompt.
 
     Args:
         model (str): Model name (e.g., "claude-3-sonnet-v2")
         policy_index (int): 0-based policy index
-        prompt_num (int): Prompt number (default 0)
+        delegate_prompt_nums (list): List of delegate prompt numbers to compare
+        trustee_prompt_num (int): Trustee prompt number to use for all comparisons
         show_plot (bool): Whether to display the plot (default True)
 
     Returns:
-        pd.DataFrame: Contains weights and corresponding disagreement rates
+        dict: Results for each delegate prompt {prompt_num: results_df}
     """
-    # Generate weight range from 0.0 to 1.0 in steps of 0.1
-    weights = np.arange(0.0, 1.1, 0.1)
-    disagreement_rates = []
+    # Generate weight range from 0.0 to 1.0 in steps of 0.01 (fine granularity)
+    weights = np.arange(0.0, 1.01, 0.1)
+    all_results = {}
 
-    print(f"Analyzing disagreement rates for {len(weights)} different long-term weights...")
+    print(f"Comparing {len(delegate_prompt_nums)} delegate prompts against trustee prompt {trustee_prompt_num}")
+    print(f"Analyzing {len(weights)} weight points for each prompt pair...")
+    print("=" * 80)
 
-    for weight in weights:
-        try:
-            # Get comparison data for this weight
-            comparison_df = create_delegate_trustee_comparison(model, policy_index, weight, prompt_num)
+    # Process each delegate prompt
+    for delegate_prompt_num in delegate_prompt_nums:
+        print(f"\nProcessing delegate prompt {delegate_prompt_num}...")
+        disagreement_rates = []
 
-            # Calculate disagreement rate
-            disagreements = comparison_df['delegate_vote'] != comparison_df['trustee_vote']
-            disagreement_rate = disagreements.sum() / len(comparison_df)
-            disagreement_rates.append(disagreement_rate)
+        for i, weight in enumerate(weights):
+            try:
+                # Get comparison data for this weight and prompt pair
+                comparison_df = create_delegate_trustee_comparison(
+                    model, policy_index, weight, trustee_prompt_num, delegate_prompt_num
+                )
 
-            print(f"Weight {weight:.1f}: {disagreement_rate:.3f} disagreement rate ({disagreements.sum()}/{len(comparison_df)} participants)")
+                # Calculate disagreement rate
+                disagreements = comparison_df['delegate_vote'] != comparison_df['trustee_vote']
+                disagreement_rate = disagreements.sum() / len(comparison_df)
+                disagreement_rates.append(disagreement_rate)
 
-        except Exception as e:
-            print(f"Error at weight {weight:.1f}: {e}")
-            disagreement_rates.append(np.nan)
+                # Progress indicator every 20 weight points
+                if (i + 1) % 20 == 0:
+                    print(f"  Progress: {i+1}/{len(weights)} weights processed ({(i+1)/len(weights)*100:.0f}%)")
 
-    # Create results DataFrame
-    results_df = pd.DataFrame({
-        'long_term_weight': weights,
-        'disagreement_rate': disagreement_rates
-    })
+            except Exception as e:
+                print(f"  Error at weight {weight:.2f}: {e}")
+                disagreement_rates.append(np.nan)
+
+        # Store results for this delegate prompt
+        results_df = pd.DataFrame({
+            'long_term_weight': weights,
+            'disagreement_rate': disagreement_rates,
+            'delegate_prompt': delegate_prompt_num
+        })
+        all_results[delegate_prompt_num] = results_df
+
+        # Summary stats for this prompt
+        valid_rates = [r for r in disagreement_rates if not np.isnan(r)]
+        if valid_rates:
+            print(f"  Delegate prompt {delegate_prompt_num}: min={min(valid_rates):.1%}, max={max(valid_rates):.1%}, avg={np.mean(valid_rates):.1%}")
 
     # Create plot
     if show_plot:
-        plt.figure(figsize=(10, 6))
-        plt.plot(weights, disagreement_rates, 'bo-', linewidth=2, markersize=8)
+        plt.figure(figsize=(12, 8))
+
+        # Define colors and line styles for different prompts
+        colors = ['blue', 'red', 'green', 'orange', 'purple', 'brown', 'pink', 'gray']
+        line_styles = ['--', '--', '--', '--']
+
+        # Plot each delegate prompt as a separate line
+        mean_disagreement_rates = []
+        for i, delegate_prompt_num in enumerate(delegate_prompt_nums):
+            results_df = all_results[delegate_prompt_num]
+            color = colors[i % len(colors)]
+            line_style = line_styles[i % len(line_styles)]
+
+            plt.plot(results_df['long_term_weight'], results_df['disagreement_rate'],
+                    color=color, linestyle=line_style, linewidth=2,
+                    markersize=8,
+                    marker='o',
+                    label=f'Delegate Prompt {delegate_prompt_num}', alpha=0.5)
+
+            # Store for mean calculation
+            mean_disagreement_rates.append(results_df['disagreement_rate'].values)
+
+        # Calculate and plot mean across all delegate prompts
+        mean_disagreement_rates = np.array(mean_disagreement_rates)
+        mean_across_prompts = np.nanmean(mean_disagreement_rates, axis=0)
+
+        plt.plot(weights, mean_across_prompts,
+                color='black', linewidth=5, label='Mean Across All Prompts', alpha=0.9)
+
         plt.xlabel('Long-term Weight', fontsize=12)
         plt.ylabel('Disagreement Rate', fontsize=12)
-        plt.title(f'Delegate vs Trustee Disagreement Rate by Long-term Weight\\n{model}, Policy {policy_index + 1}', fontsize=14)
+        plt.title(f'Disagreement Patterns by Delegate Prompt Type\\n{model}, Policy {policy_index + 1}, Trustee Prompt {trustee_prompt_num}', fontsize=14)
         plt.grid(True, alpha=0.3)
-        plt.ylim(0, 1)
+        plt.ylim(0,.5)  # Set y-axis range from 15% to 40%
         plt.xlim(0, 1)
+        plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
 
         # Format y-axis as percentages
         plt.gca().yaxis.set_major_formatter(plt.FuncFormatter(lambda y, _: '{:.0%}'.format(y)))
 
-        # Add annotations for key points
-        min_idx = np.nanargmin(disagreement_rates)
-        max_idx = np.nanargmax(disagreement_rates)
-
-        plt.annotate(f'Min: {disagreement_rates[min_idx]:.1%}',
-                    xy=(weights[min_idx], disagreement_rates[min_idx]),
-                    xytext=(10, 10), textcoords='offset points',
-                    bbox=dict(boxstyle='round,pad=0.3', fc='lightgreen', alpha=0.7),
-                    arrowprops=dict(arrowstyle='->', connectionstyle='arc3,rad=0'))
-
-        plt.annotate(f'Max: {disagreement_rates[max_idx]:.1%}',
-                    xy=(weights[max_idx], disagreement_rates[max_idx]),
-                    xytext=(10, -20), textcoords='offset points',
-                    bbox=dict(boxstyle='round,pad=0.3', fc='lightcoral', alpha=0.7),
-                    arrowprops=dict(arrowstyle='->', connectionstyle='arc3,rad=0'))
-
         plt.tight_layout()
         plt.show()
 
-    return results_df
+        # Print summary comparison
+        print("\n" + "=" * 80)
+        print("SUMMARY COMPARISON:")
+        print("=" * 80)
+        for delegate_prompt_num in delegate_prompt_nums:
+            results_df = all_results[delegate_prompt_num]
+            valid_rates = results_df['disagreement_rate'].dropna()
+            if len(valid_rates) > 0:
+                min_disagree = valid_rates.min()
+                max_disagree = valid_rates.max()
+                avg_disagree = valid_rates.mean()
+                min_weight = results_df.loc[results_df['disagreement_rate'] == min_disagree, 'long_term_weight'].iloc[0]
+                max_weight = results_df.loc[results_df['disagreement_rate'] == max_disagree, 'long_term_weight'].iloc[0]
+
+                print(f"Delegate Prompt {delegate_prompt_num}:")
+                print(f"  Min disagreement: {min_disagree:.1%} (at long-term weight {min_weight:.2f})")
+                print(f"  Max disagreement: {max_disagree:.1%} (at long-term weight {max_weight:.2f})")
+                print(f"  Average disagreement: {avg_disagree:.1%}")
+                print(f"  Range: {max_disagree - min_disagree:.1%}")
+                print()
+
+    return all_results
 
 # %%
-# Example Analysis: Compare delegate vs trustee for specific weight
-comparison_df = create_delegate_trustee_comparison("claude-3-sonnet-v2", policy_index, 0.5, 0)
-disagreements_df = comparison_df[comparison_df['delegate_vote'] != comparison_df['trustee_vote']]
-print(f"Disagreement rate: {len(disagreements_df)/len(comparison_df):.1%}")
+# Example: Compare multiple delegate prompts
+results = plot_disagreement_by_delegate_prompts("claude-3-sonnet-v2", policy_index,
+                                               delegate_prompt_nums=[0, 1, 2, 3],
+                                               trustee_prompt_num=0)
 
-# %%
-# Show the comparison data
-comparison_df.head()
-
-# %%
-# Example: Plot disagreement rates across all weights
-results = plot_disagreement_by_weight("claude-3-sonnet-v2", policy_index, prompt_num=0)
 
 # %%
