@@ -289,6 +289,112 @@ def plot_disagreement_by_delegate_prompts(model, policy_index, delegate_prompt_n
     return all_results
 
 # %%
+# All Policies Overview Function
+def plot_all_policies_overview(model, policies_list, delegate_prompt_nums, trustee_prompt_num=0, show_plot=True):
+    """
+    Create an overview plot showing all policies and delegate prompts on a single plot.
+
+    Args:
+        model (str): Model name (e.g., "claude-3-sonnet-v2")
+        policies_list (list): List of policy indices to analyze (0-based)
+        delegate_prompt_nums (list): List of delegate prompt numbers to compare
+        trustee_prompt_num (int): Trustee prompt number to use for all comparisons
+        show_plot (bool): Whether to display the plot (default True)
+
+    Returns:
+        dict: Aggregated results including all individual curves and overall mean
+    """
+    weights = np.arange(0.0, 1.01, 0.1)
+    all_curves = []
+    successful_combinations = []
+
+    print(f"Generating overview plot for {len(policies_list)} policies and {len(delegate_prompt_nums)} delegate prompts")
+    print(f"Model: {model}, Trustee prompt: {trustee_prompt_num}")
+    print("=" * 80)
+
+    # Collect data from all policy-delegate prompt combinations
+    for policy_index in policies_list:
+        for delegate_prompt_num in delegate_prompt_nums:
+            try:
+                print(f"Processing policy {policy_index + 1}, delegate prompt {delegate_prompt_num}...", end=" ")
+
+                disagreement_rates = []
+                for weight in weights:
+                    try:
+                        # Get comparison data for this weight and prompt pair
+                        comparison_df = create_delegate_trustee_comparison(
+                            model, policy_index, weight, trustee_prompt_num, delegate_prompt_num
+                        )
+
+                        # Calculate disagreement rate
+                        disagreements = comparison_df['delegate_vote'] != comparison_df['trustee_vote']
+                        disagreement_rate = disagreements.sum() / len(comparison_df)
+                        disagreement_rates.append(disagreement_rate)
+
+                    except Exception as e:
+                        disagreement_rates.append(np.nan)
+
+                # Store successful curve
+                all_curves.append(np.array(disagreement_rates))
+                successful_combinations.append((policy_index, delegate_prompt_num))
+                print("✓")
+
+            except Exception as e:
+                print(f"✗ Error: {e}")
+                continue
+
+    print(f"\nSuccessfully processed {len(all_curves)} policy-delegate combinations")
+
+    if not all_curves:
+        print("⚠ No data available for overview plot")
+        return {}
+
+    # Convert to numpy array for easier manipulation
+    all_curves = np.array(all_curves)
+
+    # Calculate overall mean (ignoring NaN values)
+    overall_mean = np.nanmean(all_curves, axis=0)
+
+    # Create plot if requested
+    if show_plot:
+        plt.figure(figsize=(12, 8))
+
+        # Plot individual curves as very light red lines
+        for i, curve in enumerate(all_curves):
+            policy_idx, delegate_idx = successful_combinations[i]
+            plt.plot(weights, curve, color='#ff9999', alpha=0.2, linewidth=0.5)
+
+        # Plot overall mean as thick black line
+        plt.plot(weights, overall_mean, color='black', linewidth=4, label='Overall Mean', alpha=0.9)
+
+        # Add a single legend entry for individual lines
+        plt.plot([], [], color='#ff9999', alpha=0.2, linewidth=0.5, label='Individual Policy-Prompt Combinations')
+
+        # Format plot
+        plt.xlabel('Long-term Weight', fontsize=12)
+        plt.ylabel('Disagreement Rate', fontsize=12)
+        plt.title(f'Disagreement Patterns Overview - All Policies and Delegate Prompts\n{model}, Trustee Prompt {trustee_prompt_num}, {len(all_curves)} combinations', fontsize=14, fontweight='bold')
+        plt.grid(True, alpha=0.3)
+        plt.ylim(0, 0.5)
+        plt.xlim(0, 1)
+        plt.legend(loc='upper right', fontsize=10)
+
+        # Format y-axis as percentages
+        plt.gca().yaxis.set_major_formatter(plt.FuncFormatter(lambda y, _: '{:.0%}'.format(y)))
+
+        plt.tight_layout()
+        plt.show()
+
+    # Return results
+    return {
+        'weights': weights,
+        'all_curves': all_curves,
+        'overall_mean': overall_mean,
+        'successful_combinations': successful_combinations,
+        'num_combinations': len(all_curves)
+    }
+
+# %%
 # Example: Compare multiple delegate prompts
 # results = plot_disagreement_by_delegate_prompts("claude-3-sonnet-v2", policy_index,
 #                                                delegate_prompt_nums=[0, 1, 2, 3],

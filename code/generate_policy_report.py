@@ -13,8 +13,8 @@ from datetime import datetime
 import argparse
 import sys
 
-# Import the comparison function from compare_delegates_trustees.py
-from compare_delegates_trustees import plot_disagreement_by_delegate_prompts
+# Import the comparison functions from compare_delegates_trustees.py
+from compare_delegates_trustees import plot_disagreement_by_delegate_prompts, plot_all_policies_overview
 
 def generate_policy_report(model, policies_list, delegate_prompt_nums, trustee_prompt_num=0,
                           output_file=None, policies_per_page=4):
@@ -66,11 +66,83 @@ def generate_policy_report(model, policies_list, delegate_prompt_nums, trustee_p
     # Create PDF
     with matplotlib.backends.backend_pdf.PdfPages(output_file) as pdf:
 
-        # Process policies in batches
+        # Generate overview plot as first page
+        print(f"\nGenerating overview page...")
+        try:
+            # Create full-page figure for overview
+            fig, ax = plt.subplots(1, 1, figsize=(16, 12))
+
+            # Generate overview data (suppress display)
+            overview_results = plot_all_policies_overview(
+                model, policies_list, delegate_prompt_nums, trustee_prompt_num, show_plot=False
+            )
+
+            if overview_results and 'all_curves' in overview_results:
+                weights = overview_results['weights']
+                all_curves = overview_results['all_curves']
+                overall_mean = overview_results['overall_mean']
+                successful_combinations = overview_results['successful_combinations']
+
+                # Plot individual curves as very light red lines
+                for i, curve in enumerate(all_curves):
+                    policy_idx, delegate_idx = successful_combinations[i]
+                    plt.plot(weights, curve, color='#ff9999', alpha=0.2, linewidth=0.5)
+
+                # Plot overall mean as thick black line
+                plt.plot(weights, overall_mean, color='black', linewidth=4, label='Overall Mean', alpha=0.9)
+
+                # Add legend entry for individual lines
+                plt.plot([], [], color='#ff9999', alpha=0.2, linewidth=0.5, label='Individual Policy-Prompt Combinations')
+
+                # Format plot
+                plt.xlabel('Long-term Weight', fontsize=14)
+                plt.ylabel('Disagreement Rate', fontsize=14)
+                plt.title(f'Disagreement Patterns Overview - All Policies and Delegate Prompts\n{model}, Trustee Prompt {trustee_prompt_num}, {len(all_curves)} combinations',
+                         fontsize=16, fontweight='bold', pad=20)
+                plt.grid(True, alpha=0.3)
+                plt.ylim(0, 0.5)
+                plt.xlim(0, 1)
+                plt.legend(loc='upper right', fontsize=12)
+
+                # Format y-axis as percentages
+                plt.gca().yaxis.set_major_formatter(plt.FuncFormatter(lambda y, _: '{:.0%}'.format(y)))
+
+                print(f"  ✓ Overview completed with {len(all_curves)} policy-delegate combinations")
+            else:
+                # Create error message if no data
+                plt.text(0.5, 0.5, 'No data available for overview plot',
+                        ha='center', va='center', transform=ax.transAxes,
+                        fontsize=16, color='red')
+                plt.title('Overview Plot (No Data Available)', fontsize=16, color='red')
+                ax.set_xticks([])
+                ax.set_yticks([])
+                print(f"  ⚠ No data available for overview")
+
+            # Save overview page
+            plt.tight_layout()
+            pdf.savefig(fig, bbox_inches='tight', dpi=150)
+            plt.close(fig)
+            print(f"  ✓ Overview page completed")
+
+        except Exception as e:
+            print(f"  ✗ Error generating overview: {e}")
+            # Create error page
+            fig, ax = plt.subplots(1, 1, figsize=(16, 12))
+            plt.text(0.5, 0.5, f'Error generating overview plot:\n{str(e)}',
+                    ha='center', va='center', transform=ax.transAxes,
+                    fontsize=14, color='red')
+            plt.title('Overview Plot (Error)', fontsize=16, color='red')
+            ax.set_xticks([])
+            ax.set_yticks([])
+            plt.tight_layout()
+            pdf.savefig(fig, bbox_inches='tight', dpi=150)
+            plt.close(fig)
+
+        # Process policies in batches for detailed 2x2 grids
         for page_start in range(0, len(policies_list), policies_per_page):
             page_policies = policies_list[page_start:page_start + policies_per_page]
 
-            print(f"\nGenerating page {page_start//policies_per_page + 1} with policies: {[p+1 for p in page_policies]}")
+            print(f"\nGenerating page {page_start//policies_per_page + 2} with policies: {[p+1 for p in page_policies]}")
 
             # Create figure for this page
             fig, axes = plt.subplots(rows, cols, figsize=(16, 12))
@@ -182,7 +254,7 @@ def generate_policy_report(model, policies_list, delegate_prompt_nums, trustee_p
             pdf.savefig(fig, bbox_inches='tight', dpi=150)
             plt.close(fig)
 
-            print(f"  ✓ Page {page_start//policies_per_page + 1} completed")
+            print(f"  ✓ Page {page_start//policies_per_page + 2} completed")
 
     print("=" * 80)
     print(f"✅ PDF report generated successfully: {output_file}")
