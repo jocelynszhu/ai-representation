@@ -13,6 +13,7 @@ import anthropic
 import sys
 from datetime import datetime
 from dotenv import load_dotenv
+from openai import OpenAI
 
 load_dotenv()
 
@@ -56,6 +57,41 @@ def run_claude(prompt, profile, policy):
     )
 
     return response.content[0].text
+
+def run_gpt(prompt, profile, policy):
+    """Execute GPT API call with full prompt in both system and user messages."""
+    client = OpenAI(api_key=os.environ["OPENAI_API_KEY"])
+
+    # Format the full prompt with bio and policy
+    full_prompt = f"{prompt.format(bio=profile)}\n\nPolicy proposal: {policy}"
+
+    messages = [
+        {
+            "role": "system",
+            "content": full_prompt
+        },
+        {
+            "role": "user",
+            "content": full_prompt
+        }
+    ]
+
+    response = client.chat.completions.create(
+        model="gpt-4o",
+        messages=messages,
+        temperature=0.0
+    )
+
+    return response.choices[0].message.content
+
+def get_llm_response(prompt, profile, policy, model_name):
+    """Route to appropriate LLM while using same prompts."""
+    if model_name == "gpt-4o":
+        return run_gpt(prompt, profile, policy)
+    elif model_name.startswith("claude"):
+        return run_claude(prompt, profile, policy)
+    else:
+        raise ValueError(f"Unsupported model: {model_name}")
 
 def predict_policy(policy_index, prompt_type, model_name, prompt_num, n_users, prompts, written_profiles, policies):
     """
@@ -119,7 +155,7 @@ def predict_policy(policy_index, prompt_type, model_name, prompt_num, n_users, p
                 print(f"[{datetime.now().strftime('%H:%M:%S')}] [{len(results)+1:3d}/{len(users_to_process)}] Processing user {user_id}...", end=" ")
 
                 # Get LLM response
-                response = run_claude(prompt, profile, policy)
+                response = get_llm_response(prompt, profile, policy, model_name)
 
                 # Process response
                 clean_response = response.replace("\n", " ")
@@ -202,7 +238,7 @@ def main():
                         choices=['delegate_ls', 'trustee_ls'],
                         help='Type of prompt to use')
     parser.add_argument('--model', type=str, default='claude-3-sonnet-v2',
-                        help='Model name for directory structure')
+                        help='Model name (claude-3-sonnet-v2 or gpt-4o)')
     parser.add_argument('--prompt-num', type=int, default=0,
                         help='Prompt number to use')
     parser.add_argument('--n-users', type=int, default=None,
@@ -220,6 +256,16 @@ def main():
     if args.n_users is not None and args.n_users <= 0:
         print("Error: Number of users must be positive")
         sys.exit(1)
+
+    # Validate API keys based on model
+    if args.model == "gpt-4o":
+        if "OPENAI_API_KEY" not in os.environ:
+            print("Error: OPENAI_API_KEY environment variable not set for GPT-4o")
+            sys.exit(1)
+    elif args.model.startswith("claude"):
+        if "ANTHROPIC_API_KEY" not in os.environ:
+            print("Error: ANTHROPIC_API_KEY environment variable not set for Claude")
+            sys.exit(1)
 
     try:
         # Load data

@@ -270,7 +270,7 @@ def main():
     parser = argparse.ArgumentParser(description='Generate PDF report of disagreement patterns across policies')
 
     parser.add_argument('--model', type=str, default='claude-3-sonnet-v2',
-                       help='Model name (default: claude-3-sonnet-v2)')
+                       help='Model name (claude-3-sonnet-v2 or gpt-4o) (default: claude-3-sonnet-v2)')
     parser.add_argument('--policies', type=str, default='0-19',
                        help='Policy range (e.g., "0-19" or "0,1,2,3") (default: 0-19)')
     parser.add_argument('--delegate-prompts', type=str, default='0,1,2,3',
