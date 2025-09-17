@@ -22,7 +22,7 @@ def generate_policy_report(model, policies_list, delegate_prompt_nums, trustee_p
     Generate a PDF report with disagreement plots for multiple policies in 2x2 grid layout.
 
     Args:
-        model (str): Model name (e.g., "claude-3-sonnet-v2")
+        model (str): Model name (e.g., "claude-3-sonnet-v2" or "gpt-4o")
         policies_list (list): List of policy indices to analyze (0-based)
         delegate_prompt_nums (list): List of delegate prompt numbers to compare
         trustee_prompt_num (int): Trustee prompt number to use for all comparisons
@@ -269,7 +269,7 @@ def main():
     """Main function with argument parsing."""
     parser = argparse.ArgumentParser(description='Generate PDF report of disagreement patterns across policies')
 
-    parser.add_argument('--model', type=str, default='claude-3-sonnet-v2',
+    parser.add_argument('--model', type=str, default='gpt-4o',
                        help='Model name (claude-3-sonnet-v2 or gpt-4o) (default: claude-3-sonnet-v2)')
     parser.add_argument('--policies', type=str, default='0-19',
                        help='Policy range (e.g., "0-19" or "0,1,2,3") (default: 0-19)')
