@@ -55,7 +55,7 @@ with open("biographies.jsonl", "w") as file:
         file.write(json.dumps(json_record) + "\n")
 
 # %% Create written profiles
-biographies = pd.read_json("rep_biographies.jsonl", lines=True)
+biographies = pd.read_json("rep_biographies.jsonl", lines=True)vc
 # %%
 
 PROFILE_PROMPT = """

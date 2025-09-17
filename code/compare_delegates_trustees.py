@@ -11,7 +11,7 @@ import numpy as np
 
 # %%
 # Configuration
-policy_index = 2  # Which policy to analyze (0-based index)
+policy_index = 0  # Which policy to analyze (0-based index)
 
 # %%
 # Load Data
@@ -290,9 +290,9 @@ def plot_disagreement_by_delegate_prompts(model, policy_index, delegate_prompt_n
 
 # %%
 # Example: Compare multiple delegate prompts
-results = plot_disagreement_by_delegate_prompts("claude-3-sonnet-v2", policy_index,
-                                               delegate_prompt_nums=[0, 1, 2, 3],
-                                               trustee_prompt_num=0)
+# results = plot_disagreement_by_delegate_prompts("claude-3-sonnet-v2", policy_index,
+#                                                delegate_prompt_nums=[0, 1, 2, 3],
+#                                                trustee_prompt_num=0)
 
 
 # %%
