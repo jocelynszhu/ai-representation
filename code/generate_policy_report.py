@@ -100,7 +100,7 @@ def generate_policy_report(model, policies_list, delegate_prompt_nums, trustee_p
                 plt.title(f'Disagreement Patterns Overview - All Policies and Delegate Prompts\n{model}, Trustee Prompt {trustee_prompt_num}, {len(all_curves)} combinations',
                          fontsize=16, fontweight='bold', pad=20)
                 plt.grid(True, alpha=0.3)
-                plt.ylim(0.05, 0.2)
+                plt.ylim(min(overall_mean) - .05, max(overall_mean) + .05)
                 plt.xlim(0, 1)
                 plt.legend(loc='upper right', fontsize=12)
 
@@ -207,7 +207,7 @@ def generate_policy_report(model, policies_list, delegate_prompt_nums, trustee_p
                     plt.xlabel('Long-term Weight', fontsize=10)
                     plt.ylabel('Disagreement Rate', fontsize=10)
                     plt.grid(True, alpha=0.3)
-                    plt.ylim(0, 0.5)
+                    plt.ylim(0, max(0.5, 0.05 + max(mean_across_prompts)))
                     plt.xlim(0, 1)
 
                     # Format y-axis as percentages
