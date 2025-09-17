@@ -29,37 +29,42 @@ def plot_variance_comparison(model_variance_dict, show_labels=True):
         stats = variance_df.groupby(['policy_id', 'source'])['var'].agg(['mean']).unstack(level=1)
         model_stats[model_name] = stats
     
-    # Sort policies by total variance for first model
-    first_model = list(model_stats.keys())[0]
-    model_stats[first_model][('total', '')] = model_stats[first_model][('mean', 'delegate')] + model_stats[first_model][('mean', 'trustee')]
-    model_stats[first_model] = model_stats[first_model].sort_values(('total', ''), ascending=True)
-    model_stats[first_model] = model_stats[first_model].drop(('total', ''), axis=1)
+    # Calculate average variance across GPT-4o and Claude for sorting
+    avg_variance = (model_stats["GPT-4o"][('mean', 'delegate')] + model_stats["GPT-4o"][('mean', 'trustee')] +
+                   model_stats["Claude"][('mean', 'delegate')] + model_stats["Claude"][('mean', 'trustee')]) / 4
     
-    # Use same policy order for all other models
-    for model_name in list(model_stats.keys())[1:]:
-        model_stats[model_name] = model_stats[model_name].reindex(model_stats[first_model].index)
+    # Sort policies by average variance
+    sorted_policies = avg_variance.sort_values(ascending=True).index
+    
+    # Apply the same sorting to all models
+    for model_name in model_stats.keys():
+        model_stats[model_name] = model_stats[model_name].reindex(sorted_policies)
     
     # Create the figure with subplots
     n_models = len(model_variance_dict)
-    fig, axes = plt.subplots(1, n_models, figsize=(6*n_models, 8))
+    fig, axes = plt.subplots(1, n_models, figsize=(8*n_models, 11))
     if n_models == 1:
         axes = [axes]
-    sns.set_style("whitegrid")
+    sns.set_style("white")  # Changed from "whitegrid" to "white" to remove gridlines
     
-    # Add suptitle
-    plt.suptitle("Variance of Votes in Delegate vs. Trustee Conditions", y=1.02, fontsize=14)
+    # Add suptitle with adjusted position and font size
+    plt.suptitle("Variance of Votes in Delegate vs. Trustee Conditions", y=0.98, fontsize=20)
     
     # Set the positions and width for the bars
-    y_pos = np.arange(len(model_stats[first_model]))
-    width = 0.35
+    y_pos = np.arange(len(model_stats[list(model_stats.keys())[0]]))
+    width = 0.25
+    
+    # Define colors using seaborn's colorblind-friendly palette
+    delegate_color = '#2166ac'  # Darker blue for delegate
+    trustee_color = '#fc8d59'   # Darker red for trustee
     
     # Plot data for each model
-    for ax, (model_name, stats) in zip(axes, model_stats.items()):
+    for i, (ax, (model_name, stats)) in enumerate(zip(axes, model_stats.items())):
         # Plot bars
         ax.barh(y_pos - width/2, stats[('mean', 'delegate')], width, 
-                label='Delegate', alpha=0.6, color='blue')
+                label='Delegate', alpha=1, color=delegate_color)
         ax.barh(y_pos + width/2, stats[('mean', 'trustee')], width, 
-                label='Trustee', alpha=0.6, color='orange')
+                label='Trustee', alpha=1, color=trustee_color)
         
         # Add individual observations
         variance_df = model_variance_dict[model_name]
@@ -68,19 +73,31 @@ def plot_variance_comparison(model_variance_dict, show_labels=True):
             delegate_data = policy_data[policy_data['source'] == 'delegate']['var']
             trustee_data = policy_data[policy_data['source'] == 'trustee']['var']
             ax.scatter(delegate_data, [i - width/2] * len(delegate_data), 
-                      color='blue', alpha=0.3, s=30)
+                      color=delegate_color, alpha=0.4, s=30)
             ax.scatter(trustee_data, [i + width/2] * len(trustee_data), 
-                      color='orange', alpha=0.3, s=30)
+                      color=trustee_color, alpha=0.4, s=30)
         
         # Customize the plot
         ax.set_yticks(y_pos)
-        if show_labels and model_name == first_model:
-            ax.set_yticklabels([f'Policy {pid}' for pid in stats.index])
+        if show_labels and model_name == list(model_stats.keys())[0]:
+            ax.set_yticklabels([f'Policy {pid}' for pid in stats.index], fontsize=14)
         else:
             ax.set_yticklabels([])
-        ax.set_xlabel('Variance')
-        ax.set_title(model_name)
-        ax.legend()
+        
+        # Only show x-axis label on the middle plot
+        if model_name == list(model_stats.keys())[1]:
+            ax.set_xlabel('Variance', fontsize=16)
+        else:
+            ax.set_xlabel('')
+            
+        ax.set_title(model_name, fontsize=16)
+        
+        # Set tick label size
+        ax.tick_params(axis='both', which='major', labelsize=14)
+        
+        # Only add legend to the last plot with larger font size
+        if model_name == list(model_stats.keys())[-1]:
+            ax.legend(loc='lower right', fontsize=18)
         
         # Remove top and right spines
         ax.spines['top'].set_visible(False)
@@ -88,18 +105,18 @@ def plot_variance_comparison(model_variance_dict, show_labels=True):
     
     # Adjust layout
     plt.tight_layout()
-#    
+    
     # Save the plot
     plt.savefig('../data/plots/variance_comparison_plot.png', dpi=300, bbox_inches='tight')
     plt.close()
     return model_stats
 
 # Example usage:
-prompts = ["prompt-1", "prompt-2", "prompt-3", "prompt-4"]
+prompts = ["prompt-0", "prompt-1", "prompt-2", "prompt-3", "prompt-4"]
 models = {
+    "Llama 3.2": "llama-3.2",
     "GPT-4o": "gpt-4o",
     "Claude": "claude-3-sonnet-v2",
-    "Llama 3.2": "llama-3.2"
 }
 
 # Load data for all models
@@ -116,99 +133,10 @@ for model_name, stats in model_stats.items():
     delegate_higher = (stats[('mean', 'delegate')] > stats[('mean', 'trustee')]).sum() / len(stats)
     print(sum(list(stats[('mean', 'delegate')] > stats[('mean', 'trustee')].values)))
     print(f"{model_name}: {delegate_higher:.2%} of policies have higher delegate variance")
-#%%
-#%%
+
+
 single = model_variance_dict["Llama 3.2"]
 delegates = single[single["source"] == "delegate"]
 trustees = single[single["source"] == "trustee"]
 delegates.groupby(["prompt"]).agg({"var": "mean"}).reset_index()
 #%%
-# # Calculate percentage of policies where delegate variance is higher than trustee variance
-# gpt_delegate_higher = (model_stats["GPT-4"][('mean', 'delegate')] > model_stats["GPT-4"][('mean', 'trustee')]).sum() / len(model_stats["GPT-4"])
-# claude_delegate_higher = (model_stats["Claude"][('mean', 'delegate')] > model_stats["Claude"][('mean', 'trustee')]).sum() / len(model_stats["Claude"])
-
-# print(f"GPT-4: {gpt_delegate_higher:.2%} of policies have higher delegate variance")
-# print(f"Claude: {claude_delegate_higher:.2%} of policies have higher delegate variance")
-
-#%%
-by_group = model_variance_dict["GPT-4o"].groupby(["vote"]).agg({'reason': 'count'}).reset_index()
-#%%
-# biographies = pd.read_json("rep_biographies.jsonl", lines=True)\
-#     .rename(columns={"ID": "id"})
-
-# #%%
-# merged = model_variance_dict["GPT-4"].merge(biographies, on='id', how='left')
-# merged["vote_binary"] = (merged["vote"] == "Yes").astype(int)
-# merged.groupby(['prompt', 'source', 'Political Affiliation']).agg({'vote_binary': 'mean'}).reset_index()
-# #%%
-# #%%
-# vote_variance = model_variance_dict["GPT-4"].groupby(['prompt', 'source', 'policy_id'])['vote_binary'].agg(['mean', 'var']).round(3)\
-#     .reset_index()
-
-# # %%
-# def plot_variance_comparison(vote_variance):
-#     """Create a horizontal bar plot comparing delegate and trustee variances for each policy with individual observations."""
-#     # Calculate mean variance for each policy and source
-#     stats = vote_variance.groupby(['policy_id', 'source'])['var'].agg(['mean']).unstack(level=1)
-    
-#     # Sort policies by total variance
-#     stats[('total', '')] = stats[('mean', 'delegate')] + stats[('mean', 'trustee')]
-#     stats = stats.sort_values(('total', ''), ascending=True)
-#     stats = stats.drop(('total', ''), axis=1)
-    
-#     # Create the plot
-#     plt.figure(figsize=(12, 8))
-#     sns.set_style("whitegrid")
-    
-#     # Set the positions and width for the bars
-#     y_pos = np.arange(len(stats))
-#     width = 0.35
-    
-#     # Create the bars
-#     plt.barh(y_pos - width/2, stats[('mean', 'delegate')], width, 
-#              label='Delegate', alpha=0.6)
-#     plt.barh(y_pos + width/2, stats[('mean', 'trustee')], width, 
-#              label='Trustee', alpha=0.6)
-    
-#     # Add individual observations as dots
-#     for i, policy_id in enumerate(stats.index):
-#         # Get all observations for this policy
-#         policy_data = vote_variance[vote_variance['policy_id'] == policy_id]
-        
-#         # Plot delegate observations
-#         delegate_data = policy_data[policy_data['source'] == 'delegate']['var']
-#         plt.scatter(delegate_data, [i - width/2] * len(delegate_data), 
-#                    color='blue', alpha=0.3, s=30)
-        
-#         # Plot trustee observations
-#         trustee_data = policy_data[policy_data['source'] == 'trustee']['var']
-#         plt.scatter(trustee_data, [i + width/2] * len(trustee_data), 
-#                    color='orange', alpha=0.3, s=30)
-    
-#     # Customize the plot
-#     plt.yticks(y_pos, [f'Policy {pid}' for pid in stats.index])
-#     plt.xlabel('Variance')
-#     plt.title('Comparison of Delegate vs Trustee Variance by Policy\nwith Individual Observations')
-#     plt.legend()
-    
-#     # Adjust layout
-#     plt.tight_layout()
-#     plt.show()
-    
-#     # Save the plot
-#     plt.savefig('variance_comparison_plot.png', dpi=300, bbox_inches='tight')
-#     plt.close()
-#     return stats
-
-# # Call the function to create the plot
-# stats = plot_variance_comparison(vote_variance)
-
-# # %%
-# (stats[('mean', 'delegate')] > stats[('mean', 'trustee')]).sum() / len(stats)
-# # %%
-# stats
-# # %%
-# vote_variance[vote_variance['policy_id'] == 6]
-# # %%
-
-# # %%

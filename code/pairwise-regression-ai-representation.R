@@ -11,8 +11,8 @@ library(emmeans)
 setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
 
 ## Load data
-model_name = 'claude-3-sonnet-v2'
-all_data <- read_csv("~/Documents/PhD/ai-representation/data/demo/claude-3-sonnet-v2-pairwise_regression.csv")
+model_name = 'llama-3.2'
+all_data <- read_csv("~/Documents/PhD/ai-representation/data/demo/llama-3.2-pairwise_regression.csv")
 
 all_data$age_group <- factor(all_data$age_group, 
                              levels = c("18-24", "25-34", "35-44", "45-54", "55-64", "65+"), ordered = TRUE)
@@ -25,6 +25,13 @@ all_data$education <- factor(all_data$education,
                              levels = c('High school diploma or less', 'Some college, no degree', 'Associate degree', "Bachelor's degree",
                                         'Graduate or professional degree'), ordered = TRUE)
 
+all_data$political_affiliation = factor(all_data$political_affiliation,
+                                        levels = c("Independent", "Democrat", "Republican"), ordered = FALSE)
+all_data$gender = factor(all_data$gender,
+                                        levels = c("Female", "Male"), ordered = FALSE)
+
+all_data$race = factor(all_data$race, levels = c("Other", "Asian", "Hispanic or Latino", "White",
+                                                   "Black or African American"), ordered = FALSE)
 all_data$same_condition_binary <- factor(
   all_data$same_condition_binary,
   levels = c(1, 0),
@@ -100,7 +107,7 @@ or_df <- bind_rows(lapply(predictors, function(var) {
 }))
 
 or_df_small = or_df %>% select(odds.ratio, variable, level, sig) %>% mutate(model = model_name)
-write.csv(or_df_small, paste0("../data/demo/or_df_small_", model_name, ".csv"), row.names = FALSE)
+write.csv(or_df_small, paste0("../data/demo/coefs/or_df_small_", model_name, ".csv"), row.names = FALSE)
 
 
 # # 4. plot it

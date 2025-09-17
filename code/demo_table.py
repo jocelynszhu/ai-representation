@@ -35,5 +35,5 @@ all_data["odds.ratio"] = all_data["odds.ratio"] + all_data["sig"]
 # %%
 all_data.pivot(index=["variable", "level"], columns="model", values="odds.ratio")
 # %%
-all_data
+
 # %%
