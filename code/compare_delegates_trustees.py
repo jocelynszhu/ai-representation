@@ -365,7 +365,7 @@ def plot_all_policies_overview(model, policies_list, delegate_prompt_nums, trust
             plt.plot(weights, curve, color='#ff9999', alpha=0.2, linewidth=0.5)
 
         # Plot overall mean as thick black line
-        plt.plot(weights, overall_mean, color='black', linewidth=4, label='Overall Mean', alpha=0.9)
+        plt.plot(weights, overall_mean, color='black', linewidth=4, label='Overall Mean', alpha=0.9, markersize=15, marker='o')
 
         # Add a single legend entry for individual lines
         plt.plot([], [], color='#ff9999', alpha=0.2, linewidth=0.5, label='Individual Policy-Prompt Combinations')
