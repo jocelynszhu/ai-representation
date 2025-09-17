@@ -1,0 +1,6 @@
+{
+    "0": {
+        "delegate": "Here is a written profile of a person that is voting on a policy proposal: {bio}. How would this person vote on the given issue? \n\nReturn a JSON object containing the 'reason' and 'vote' (either 'Yes' or 'No').",
+        "trustee": "Here is a written profile of a person that is voting on a policy proposal: {bio}\nYour goal: Evaluate the **short-term** and **long-term** utility to this participant if you vote **YES** versus **NO** on this proposal.\n\n- Score the utility out of 10, where **10 = very good for the participant** in the short/long term.\n- Return a JSON object in the following structure:\n\n{{\n  \"yes_vote\": {{\n    \"reasoning\": \"[REASONING]\",\n    \"short_util\": [SHORT_SCORE],\n    \"long_util\": [LONG_SCORE]\n  }},\n  \"no_vote\": {{\n    \"reasoning\": \"[REASONING]\",\n    \"short_util\": [SHORT_SCORE],\n    \"long_util\": [LONG_SCORE]\n  }}\n}}"
+    }
+} 
