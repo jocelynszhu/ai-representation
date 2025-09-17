@@ -1,3 +1,8 @@
+drafts/*
+*.Rhistory
+*.csv
+*.docx
 .DS_Store
 code/__pycache__/*
+*Rdata
 data/*
