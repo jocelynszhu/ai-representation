@@ -1,0 +1,10 @@
+{
+    "0": {
+        "delegate_lsd": "Here is a written profile of a person that is voting on a policy proposal: {bio}. How would this person vote on the given issue? \n\nReturn a JSON object containing the 'reason' and 'vote' (either 'Yes' or 'No').",
+        "trustee_lsd": "Here is a written profile of a person that is voting on a policy proposal: {bio}\n\nYour goal: Evaluate the participant’s utility over time for two scenarios:\n1. The proposal passes (Yes)\n2. The proposal does not pass (No)\n\nInstructions:\n- Utility = overall well-being/benefit to the participant (financial, social, personal, and professional).\n- Score utility from 0 to 100, where:\n  - 0 = very harmful,\n  - 50 = neutral/mixed impact,\n  - 100 = maximally beneficial.\n- For each time window, provide the rationale first (1–2 sentences), then the score.\n- Return results as JSON in the following format:\n\n{{\n  \"yes\": {{\n    \"0-5 years\": {{\"rationale\": \"...\", \"score\": X}},\n    \"5-10 years\": {{\"rationale\": \"...\", \"score\": X}},\n    \"10-15 years\": {{\"rationale\": \"...\", \"score\": X}},\n    \"15-20 years\": {{\"rationale\": \"...\", \"score\": X}},\n    \"20-25 years\": {{\"rationale\": \"...\", \"score\": X}},\n    \"25-30 years\": {{\"rationale\": \"...\", \"score\": X}}\n  }},\n  \"no\": {{\n    \"0-5 years\": {{\"rationale\": \"...\", \"score\": X}},\n    \"5-10 years\": {{\"rationale\": \"...\", \"score\": X}},\n    \"10-15 years\": {{\"rationale\": \"...\", \"score\": X}},\n    \"15-20 years\": {{\"rationale\": \"...\", \"score\": X}},\n    \"20-25 years\": {{\"rationale\": \"...\", \"score\": X}},\n    \"25-30 years\": {{\"rationale\": \"...\", \"score\": X}}\n  }}\n}}"
+    }
+} 
+
+
+
+  

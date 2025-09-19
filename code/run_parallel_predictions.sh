@@ -2,14 +2,14 @@
 # Simple Parallel Policy Prediction Runner
 
 # Configuration
-MODEL="gpt-4o"
-PROMPT_TYPE="trustee_ls"
+MODEL="claude-3-sonnet-v2"
+PROMPT_TYPE="trustee_lsd"
 PROMPT_NUM=0
 N_USERS=""  # Leave empty for all users, or set to a number
 MAX_PARALLEL=4  # Maximum number of parallel processes
-
+PROMPT_FILE="prompts_long_short_discount.json"
 # Policies to run (modify this list as needed)
-POLICIES=(1 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19)
+POLICIES=(0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19)
 #POLICIES=(0 1 2 3)
 # Create logs directory
 LOG_DIR="logs"
@@ -28,7 +28,7 @@ for ((i=0; i<${#POLICIES[@]}; i+=MAX_PARALLEL)); do
         echo "Starting policy $policy..."
 
         # Build command
-        cmd="python predict_policy.py --policy $policy --prompt-type $PROMPT_TYPE --model $MODEL --prompt-num $PROMPT_NUM"
+        cmd="python predict_policy.py --policy $policy --prompt-type $PROMPT_TYPE --model $MODEL --prompt-num $PROMPT_NUM --prompt-file $PROMPT_FILE"
         if [ -n "$N_USERS" ]; then
             cmd="$cmd --n-users $N_USERS"
         fi

@@ -23,7 +23,7 @@ prompt_type = "trustee_ls"  # "delegate" or "trustee"
 # Load Data
 
 # Load prompts
-with open('../prompts_long_short.json', 'r') as f:
+with open('../prompts_long_short_discount.json', 'r') as f:
     prompts = json.load(f)
 
 # Load user profiles

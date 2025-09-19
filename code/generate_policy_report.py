@@ -17,7 +17,7 @@ import sys
 from compare_delegates_trustees import plot_disagreement_by_delegate_prompts, plot_all_policies_overview
 
 def generate_policy_report(model, policies_list, delegate_prompt_nums, trustee_prompt_num=0,
-                          output_file=None, policies_per_page=4):
+                          trustee_format='trustee_ls', output_file=None, policies_per_page=4):
     """
     Generate a PDF report with disagreement plots for multiple policies in 2x2 grid layout.
 
@@ -26,6 +26,7 @@ def generate_policy_report(model, policies_list, delegate_prompt_nums, trustee_p
         policies_list (list): List of policy indices to analyze (0-based)
         delegate_prompt_nums (list): List of delegate prompt numbers to compare
         trustee_prompt_num (int): Trustee prompt number to use for all comparisons
+        trustee_format (str): Trustee data format ('trustee_ls' or 'trustee_lsd')
         output_file (str): Output PDF filename (default: auto-generated)
         policies_per_page (int): Number of policies per page (default: 4 for 2x2 grid)
 
@@ -52,6 +53,7 @@ def generate_policy_report(model, policies_list, delegate_prompt_nums, trustee_p
     print(f"Policies: {policies_list}")
     print(f"Delegate prompts: {delegate_prompt_nums}")
     print(f"Trustee prompt: {trustee_prompt_num}")
+    print(f"Trustee format: {trustee_format}")
     print(f"Layout: {policies_per_page} policies per page")
     print("=" * 80)
 
@@ -74,7 +76,7 @@ def generate_policy_report(model, policies_list, delegate_prompt_nums, trustee_p
 
             # Generate overview data (suppress display)
             overview_results = plot_all_policies_overview(
-                model, policies_list, delegate_prompt_nums, trustee_prompt_num, show_plot=False
+                model, policies_list, delegate_prompt_nums, trustee_prompt_num, trustee_format, show_plot=False
             )
 
             if overview_results and 'all_curves' in overview_results:
@@ -95,13 +97,13 @@ def generate_policy_report(model, policies_list, delegate_prompt_nums, trustee_p
                 plt.plot([], [], color='#ff9999', alpha=0.2, linewidth=0.5, label='Individual Policy-Prompt Combinations')
 
                 # Format plot
-                plt.xlabel('Long-term Weight', fontsize=14)
+                plt.xlabel('Weight Parameter (Long-term Weight / Sigma)', fontsize=14)
                 plt.ylabel('Disagreement Rate', fontsize=14)
                 plt.title(f'Disagreement Patterns Overview - All Policies and Delegate Prompts\n{model}, Trustee Prompt {trustee_prompt_num}, {len(all_curves)} combinations',
                          fontsize=16, fontweight='bold', pad=20)
                 plt.grid(True, alpha=0.3)
                 plt.ylim(min(overall_mean) - .05, max(overall_mean) + .05)
-                plt.xlim(0, 1)
+                plt.xlim(0, 2)
                 plt.legend(loc='upper right', fontsize=12)
 
                 # Format y-axis as percentages
@@ -164,11 +166,11 @@ def generate_policy_report(model, policies_list, delegate_prompt_nums, trustee_p
                     # Generate the disagreement plot (suppress display)
                     results = plot_disagreement_by_delegate_prompts(
                         model, policy_index, delegate_prompt_nums,
-                        trustee_prompt_num, show_plot=False
+                        trustee_prompt_num, trustee_format, show_plot=False
                     )
 
                     # Plot the results manually on current axes
-                    weights = np.arange(0.0, 1.01, 0.1)
+                    weights = np.arange(0.0, 2.01, 0.1)
                     colors = ['blue', 'red', 'green', 'orange', 'purple', 'brown', 'pink', 'gray']
                     line_styles = ['--', '--', '--', '--']
 
@@ -204,11 +206,11 @@ def generate_policy_report(model, policies_list, delegate_prompt_nums, trustee_p
 
                     # Format subplot
                     plt.title(policy_title, fontsize=10, fontweight='bold', wrap=True, pad=10)
-                    plt.xlabel('Long-term Weight', fontsize=10)
+                    plt.xlabel('Weight Parameter (Long-term Weight / Sigma)', fontsize=10)
                     plt.ylabel('Disagreement Rate', fontsize=10)
                     plt.grid(True, alpha=0.3)
                     plt.ylim(0, max(0.5, 0.05 + max(mean_across_prompts)))
-                    plt.xlim(0, 1)
+                    plt.xlim(0, 2)
 
                     # Format y-axis as percentages
                     plt.gca().yaxis.set_major_formatter(plt.FuncFormatter(lambda y, _: '{:.0%}'.format(y)))
@@ -277,6 +279,9 @@ def main():
                        help='Delegate prompt numbers (comma-separated) (default: 0,1,2,3)')
     parser.add_argument('--trustee-prompt', type=int, default=0,
                        help='Trustee prompt number (default: 0)')
+    parser.add_argument('--trustee-format', type=str, default='trustee_ls',
+                       choices=['trustee_ls', 'trustee_lsd'],
+                       help='Trustee data format (default: trustee_ls)')
     parser.add_argument('--output', type=str, default=None,
                        help='Output PDF filename (default: auto-generated)')
     parser.add_argument('--policies-per-page', type=int, default=4,
@@ -315,7 +320,7 @@ def main():
         # Generate report
         output_file = generate_policy_report(
             args.model, policies_list, delegate_prompt_nums,
-            args.trustee_prompt, args.output, args.policies_per_page
+            args.trustee_prompt, args.trustee_format, args.output, args.policies_per_page
         )
 
         print(f"\n🎉 Report generation completed successfully!")

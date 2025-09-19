@@ -38,13 +38,12 @@ def calculate_weighted_vote(parsed_response, long_term_weight):
 
     Args:
         parsed_response (dict): Parsed JSON response with yes_vote/no_vote utilities
-        long_term_weight (float): Weight for long-term utility (0-1), short-term gets (1-long_term_weight)
+        long_term_weight (float): Weight for long-term utility, short-term gets (1-long_term_weight)
 
     Returns:
         dict: Contains weighted scores and final vote decision
     """
-    if long_term_weight < 0 or long_term_weight > 1:
-        raise ValueError("long_term_weight must be between 0 and 1")
+    # Allow any long_term_weight value for flexibility
 
     short_term_weight = 1 - long_term_weight
 
@@ -73,17 +72,97 @@ def calculate_weighted_vote(parsed_response, long_term_weight):
     }
 
 # %%
+# Exponential Discounting Function for Time-Based Utilities
+def calculate_discounted_vote(parsed_response, sigma):
+    """
+    Calculate exponentially discounted utility scores and determine vote.
+
+    Args:
+        parsed_response (dict): Parsed JSON response with time-based utilities
+        sigma (float): Discount factor, where 0 = only immediate matters, 1 = no discounting, >1 = anti-discounting (future matters more)
+
+    Returns:
+        dict: Contains discounted scores, individual period contributions, and final vote decision
+    """
+    # Input validation - allow any sigma value for flexibility
+
+    # Define time periods in order
+    time_periods = ["0-5 years", "5-10 years", "10-15 years", "15-20 years", "20-25 years", "25-30 years"]
+
+    # Initialize totals and detailed breakdowns
+    yes_discounted_total = 0
+    no_discounted_total = 0
+    yes_period_details = []
+    no_period_details = []
+
+    # Process each time period
+    for t, period in enumerate(time_periods):
+        try:
+            # Extract scores for this period
+            yes_score = parsed_response["yes"][period]["score"]
+            no_score = parsed_response["no"][period]["score"]
+
+            # Calculate discount factor for this time period
+            discount_factor = sigma ** t
+
+            # Apply exponential discounting
+            yes_discounted = yes_score * discount_factor
+            no_discounted = no_score * discount_factor
+
+            # Accumulate totals
+            yes_discounted_total += yes_discounted
+            no_discounted_total += no_discounted
+
+            # Store detailed breakdown for analysis
+            yes_period_details.append({
+                "period": period,
+                "raw_score": yes_score,
+                "discount_factor": discount_factor,
+                "discounted_score": yes_discounted
+            })
+
+            no_period_details.append({
+                "period": period,
+                "raw_score": no_score,
+                "discount_factor": discount_factor,
+                "discounted_score": no_discounted
+            })
+
+        except KeyError as e:
+            raise ValueError(f"Missing required field in parsed_response for period '{period}': {e}")
+        except (TypeError, ValueError) as e:
+            raise ValueError(f"Invalid score value in period '{period}': {e}")
+
+    # Determine vote based on discounted utilities
+    if yes_discounted_total > no_discounted_total:
+        vote = "Yes"
+    elif no_discounted_total > yes_discounted_total:
+        vote = "No"
+    else:
+        vote = "Neutral"
+
+    return {
+        "yes_discounted_utility": yes_discounted_total,
+        "no_discounted_utility": no_discounted_total,
+        "vote": vote,
+        "sigma": sigma,
+        "yes_period_breakdown": yes_period_details,
+        "no_period_breakdown": no_period_details
+    }
+
+# %%
 # Delegate-Trustee Comparison Function
-def create_delegate_trustee_comparison(model, policy_index, long_term_weight, trustee_prompt_num=0, delegate_prompt_num=0):
+def create_delegate_trustee_comparison(model, policy_index, weight_param, trustee_prompt_num=0, delegate_prompt_num=0, trustee_format='trustee_ls'):
     """
     Create a comparison DataFrame of delegate vs trustee votes for a given policy.
 
     Args:
         model (str): Model name (e.g., "claude-3-sonnet-v2")
         policy_index (int): 0-based policy index
-        long_term_weight (float): Weight for long-term utility (0-1)
+        weight_param (float): Weight parameter - used as long_term_weight for ls format or sigma for lsd format
         trustee_prompt_num (int): Prompt number (default 0)
         delegate_prompt_num (int): Prompt number (default 0)
+        trustee_format (str): Trustee data format ('trustee_ls' or 'trustee_lsd')
 
     Returns:
         pd.DataFrame: Columns: participant_id, policy_id, delegate_vote, trustee_vote
@@ -94,7 +173,7 @@ def create_delegate_trustee_comparison(model, policy_index, long_term_weight, tr
 
     # File paths
     delegate_file = f"../data/delegate/{model}/prompt-{delegate_prompt_num}/d_policy_{policy_id}_votes.jsonl"
-    trustee_file = f"../data/trustee_ls/{model}/prompt-{trustee_prompt_num}/t_policy_{policy_id}_votes.jsonl"
+    trustee_file = f"../data/{trustee_format}/{model}/prompt-{trustee_prompt_num}/t_policy_{policy_id}_votes.jsonl"
 
     # Check if files exist
     if not os.path.exists(delegate_file):
@@ -120,13 +199,19 @@ def create_delegate_trustee_comparison(model, policy_index, long_term_weight, tr
 
     # Load and process trustee data
     trustee_data = []
+
     with open(trustee_file, 'r') as f:
         for line in f:
             try:
                 data = json.loads(line.strip())
 
-                # Use calculate_weighted_vote to get the final vote
-                vote_result = calculate_weighted_vote(data, long_term_weight)
+                # Use appropriate calculation function based on format
+                if trustee_format == 'trustee_ls':
+                    vote_result = calculate_weighted_vote(data, weight_param)
+                elif trustee_format == 'trustee_lsd':
+                    vote_result = calculate_discounted_vote(data, weight_param)
+                else:
+                    raise ValueError(f"Unsupported trustee format: {trustee_format}")
 
                 trustee_data.append({
                     'participant_id': data['id'],
@@ -136,7 +221,7 @@ def create_delegate_trustee_comparison(model, policy_index, long_term_weight, tr
                 print(f"Error parsing trustee data: {e}")
                 continue
             except Exception as e:
-                print(f"Error calculating weighted vote for participant {data.get('id', 'unknown')}: {e}")
+                print(f"Error calculating vote for participant {data.get('id', 'unknown')}: {e}")
                 continue
 
     trustee_df = pd.DataFrame(trustee_data)
@@ -160,7 +245,7 @@ def create_delegate_trustee_comparison(model, policy_index, long_term_weight, tr
 
 # %%
 # Multi-Delegate Prompt Comparison Function
-def plot_disagreement_by_delegate_prompts(model, policy_index, delegate_prompt_nums, trustee_prompt_num=0, show_plot=True):
+def plot_disagreement_by_delegate_prompts(model, policy_index, delegate_prompt_nums, trustee_prompt_num=0, trustee_format='trustee_ls', show_plot=True):
     """
     Compare disagreement patterns across different delegate prompts paired with the same trustee prompt.
 
@@ -169,13 +254,14 @@ def plot_disagreement_by_delegate_prompts(model, policy_index, delegate_prompt_n
         policy_index (int): 0-based policy index
         delegate_prompt_nums (list): List of delegate prompt numbers to compare
         trustee_prompt_num (int): Trustee prompt number to use for all comparisons
+        trustee_format (str): Trustee data format ('trustee_ls' or 'trustee_lsd')
         show_plot (bool): Whether to display the plot (default True)
 
     Returns:
         dict: Results for each delegate prompt {prompt_num: results_df}
     """
-    # Generate weight range from 0.0 to 1.0 in steps of 0.01 (fine granularity)
-    weights = np.arange(0.0, 1.01, 0.1)
+    # Generate weight range from 0.0 to 2.0 in steps of 0.1 (extended range for anti-discounting)
+    weights = np.arange(0.0, 2.01, 0.1)
     all_results = {}
 
     print(f"Comparing {len(delegate_prompt_nums)} delegate prompts against trustee prompt {trustee_prompt_num}")
@@ -191,7 +277,7 @@ def plot_disagreement_by_delegate_prompts(model, policy_index, delegate_prompt_n
             try:
                 # Get comparison data for this weight and prompt pair
                 comparison_df = create_delegate_trustee_comparison(
-                    model, policy_index, weight, trustee_prompt_num, delegate_prompt_num
+                    model, policy_index, weight, trustee_prompt_num, delegate_prompt_num, trustee_format
                 )
 
                 # Calculate disagreement rate
@@ -251,12 +337,12 @@ def plot_disagreement_by_delegate_prompts(model, policy_index, delegate_prompt_n
         plt.plot(weights, mean_across_prompts,
                 color='black', linewidth=5, label='Mean Across All Prompts', alpha=0.9)
 
-        plt.xlabel('Long-term Weight', fontsize=12)
+        plt.xlabel('Weight Parameter (Long-term Weight / Sigma)', fontsize=12)
         plt.ylabel('Disagreement Rate', fontsize=12)
         plt.title(f'Disagreement Patterns by Delegate Prompt Type\\n{model}, Policy {policy_index + 1}, Trustee Prompt {trustee_prompt_num}', fontsize=14)
         plt.grid(True, alpha=0.3)
         plt.ylim(0,.5)  # Set y-axis range from 15% to 40%
-        plt.xlim(0, 1)
+        plt.xlim(0, 2)
         plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
 
         # Format y-axis as percentages
@@ -290,7 +376,7 @@ def plot_disagreement_by_delegate_prompts(model, policy_index, delegate_prompt_n
 
 # %%
 # All Policies Overview Function
-def plot_all_policies_overview(model, policies_list, delegate_prompt_nums, trustee_prompt_num=0, show_plot=True):
+def plot_all_policies_overview(model, policies_list, delegate_prompt_nums, trustee_prompt_num=0, trustee_format='trustee_ls', show_plot=True):
     """
     Create an overview plot showing all policies and delegate prompts on a single plot.
 
@@ -299,12 +385,13 @@ def plot_all_policies_overview(model, policies_list, delegate_prompt_nums, trust
         policies_list (list): List of policy indices to analyze (0-based)
         delegate_prompt_nums (list): List of delegate prompt numbers to compare
         trustee_prompt_num (int): Trustee prompt number to use for all comparisons
+        trustee_format (str): Trustee data format ('trustee_ls' or 'trustee_lsd')
         show_plot (bool): Whether to display the plot (default True)
 
     Returns:
         dict: Aggregated results including all individual curves and overall mean
     """
-    weights = np.arange(0.0, 1.01, 0.1)
+    weights = np.arange(0.0, 2.01, 0.1)
     all_curves = []
     successful_combinations = []
 
@@ -323,7 +410,7 @@ def plot_all_policies_overview(model, policies_list, delegate_prompt_nums, trust
                     try:
                         # Get comparison data for this weight and prompt pair
                         comparison_df = create_delegate_trustee_comparison(
-                            model, policy_index, weight, trustee_prompt_num, delegate_prompt_num
+                            model, policy_index, weight, trustee_prompt_num, delegate_prompt_num, trustee_format
                         )
 
                         # Calculate disagreement rate
@@ -371,12 +458,12 @@ def plot_all_policies_overview(model, policies_list, delegate_prompt_nums, trust
         plt.plot([], [], color='#ff9999', alpha=0.2, linewidth=0.5, label='Individual Policy-Prompt Combinations')
 
         # Format plot
-        plt.xlabel('Long-term Weight', fontsize=12)
+        plt.xlabel('Weight Parameter (Long-term Weight / Sigma)', fontsize=12)
         plt.ylabel('Disagreement Rate', fontsize=12)
         plt.title(f'Disagreement Patterns Overview - All Policies and Delegate Prompts\n{model}, Trustee Prompt {trustee_prompt_num}, {len(all_curves)} combinations', fontsize=14, fontweight='bold')
         plt.grid(True, alpha=0.3)
         plt.ylim(0, 0.5)
-        plt.xlim(0, 1)
+        plt.xlim(0, 2)
         plt.legend(loc='upper right', fontsize=10)
 
         # Format y-axis as percentages

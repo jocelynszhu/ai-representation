@@ -17,12 +17,13 @@ from openai import OpenAI
 
 load_dotenv()
 
-def load_data():
+def load_data(prompt_file='prompts_long_short.json'):
     """Load prompts, profiles, and policies data."""
     print(f"[{datetime.now().strftime('%H:%M:%S')}] Loading data...")
 
-    # Load prompts
-    with open('../prompts_long_short.json', 'r') as f:
+    # Load prompts from specified file
+    prompt_path = f'../{prompt_file}'
+    with open(prompt_path, 'r') as f:
         prompts = json.load(f)
 
     # Load user profiles
@@ -31,7 +32,7 @@ def load_data():
     # Load policies
     policies = pd.read_json("../self_selected_policies.jsonl", lines=True)
 
-    print(f"[{datetime.now().strftime('%H:%M:%S')}] Loaded {len(prompts)} prompt sets, {len(written_profiles)} profiles, {len(policies)} policies")
+    print(f"[{datetime.now().strftime('%H:%M:%S')}] Loaded {len(prompts)} prompt sets from {prompt_file}, {len(written_profiles)} profiles, {len(policies)} policies")
 
     return prompts, written_profiles, policies
 
@@ -235,12 +236,15 @@ def main():
     parser.add_argument('--policy', type=int, required=True,
                         help='Policy index to process (0-based)')
     parser.add_argument('--prompt-type', type=str, default='trustee_ls',
-                        choices=['delegate_ls', 'trustee_ls'],
+                        choices=['delegate_ls', 'trustee_ls', 'delegate_lsd', 'trustee_lsd'],
                         help='Type of prompt to use')
     parser.add_argument('--model', type=str, default='claude-3-sonnet-v2',
                         help='Model name (claude-3-sonnet-v2 or gpt-4o)')
     parser.add_argument('--prompt-num', type=int, default=0,
                         help='Prompt number to use')
+    parser.add_argument('--prompt-file', type=str, default='prompts_long_short_discount.json',
+                        choices=['prompts_long_short.json', 'prompts_long_short_discount.json'],
+                        help='Prompt file to use')
     parser.add_argument('--n-users', type=int, default=None,
                         help='Number of users to process (default: all)')
     parser.add_argument('--quiet', action='store_true',
@@ -269,7 +273,7 @@ def main():
 
     try:
         # Load data
-        prompts, written_profiles, policies = load_data()
+        prompts, written_profiles, policies = load_data(args.prompt_file)
 
         # Validate policy index
         if args.policy >= len(policies):
