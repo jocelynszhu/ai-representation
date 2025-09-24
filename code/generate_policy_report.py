@@ -169,7 +169,7 @@ def generate_policy_report(model, policies_list, delegate_prompt_nums, trustee_p
                     )
 
                     # Plot the results manually on current axes
-                    weights = np.arange(0.0, 2.01, 0.1)
+                    weights = np.arange(0.0, 1.01, 0.1) # changed from 2.01 to 1.01
                     colors = ['blue', 'red', 'green', 'orange', 'purple', 'brown', 'pink', 'gray']
                     line_styles = ['--', '--', '--', '--']
 
@@ -216,7 +216,7 @@ def generate_policy_report(model, policies_list, delegate_prompt_nums, trustee_p
                     plt.ylabel('Rate', fontsize=10)
                     plt.grid(True, alpha=0.3)
                     plt.ylim(0, 1)  # Set to 0-100% to accommodate both disagreement and support rates
-                    plt.xlim(0, 2)
+                    plt.xlim(0, 1) # changed from 2 to 1
 
                     # Format y-axis as percentages
                     plt.gca().yaxis.set_major_formatter(plt.FuncFormatter(lambda y, _: '{:.0%}'.format(y)))

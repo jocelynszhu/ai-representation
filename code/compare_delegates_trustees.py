@@ -261,7 +261,7 @@ def plot_disagreement_by_delegate_prompts(model, policy_index, delegate_prompt_n
         dict: Results for each delegate prompt {prompt_num: results_df}
     """
     # Generate weight range from 0.0 to 2.0 in steps of 0.1 (extended range for anti-discounting)
-    weights = np.arange(0.0, 2.01, 0.1)
+    weights = np.arange(0.0, 1.01, 0.1) # changed from 2.01 to 1.01
     all_results = {}
 
     print(f"Comparing {len(delegate_prompt_nums)} delegate prompts against trustee prompt {trustee_prompt_num}")
@@ -367,7 +367,7 @@ def plot_disagreement_by_delegate_prompts(model, policy_index, delegate_prompt_n
         plt.title(f'Disagreement Patterns & Trustee Policy Support\\n{model}, Policy {policy_index + 1}, Trustee Prompt {trustee_prompt_num}', fontsize=14)
         plt.grid(True, alpha=0.3)
         plt.ylim(0, 1)  # Set y-axis range from 0% to 100% to accommodate both metrics
-        plt.xlim(0, 2)
+        plt.xlim(0, 1) # changed from 2 to 1
         plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
 
         # Format y-axis as percentages
@@ -422,7 +422,7 @@ def plot_all_policies_overview(model, policies_list, delegate_prompt_nums, trust
     Returns:
         dict: Aggregated results including all individual curves and overall mean
     """
-    weights = np.arange(0.0, 2.01, 0.1)
+    weights = np.arange(0.0, 1.01, 0.1) # changed from 2.01 to 1.01
     all_curves = []
     successful_combinations = []
 
@@ -494,7 +494,7 @@ def plot_all_policies_overview(model, policies_list, delegate_prompt_nums, trust
         plt.title(f'Disagreement Patterns Overview - All Policies and Delegate Prompts\n{model}, Trustee Prompt {trustee_prompt_num}, {len(all_curves)} combinations', fontsize=14, fontweight='bold')
         plt.grid(True, alpha=0.3)
         plt.ylim(0, 0.5)
-        plt.xlim(0, 2)
+        plt.xlim(0, 1) # changed from 2 to 1
         plt.legend(loc='upper right', fontsize=10)
 
         # Format y-axis as percentages

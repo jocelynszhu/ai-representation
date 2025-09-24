@@ -172,7 +172,7 @@ def plot_agreement_comparison(model, policy_index, delegate_prompt_nums, trustee
         dict: Results data for trustee and delegate agreement rates
     """
     # Define weight range
-    weights = np.arange(0.0, 2.01, 0.1)
+    weights = np.arange(0.0, 1.01, 0.1)
 
     print(f"Processing policy {policy_index + 1} agreement rates...")
 
@@ -229,7 +229,7 @@ def plot_agreement_comparison(model, policy_index, delegate_prompt_nums, trustee
         plt.ylabel('Agreement Rate (Proportion Voting "Yes")', fontsize=12)
         plt.grid(True, alpha=0.3)
         plt.ylim(0, 1)
-        plt.xlim(0, 2)
+        plt.xlim(0, 1)
 
         # Format y-axis as percentages
         plt.gca().yaxis.set_major_formatter(plt.FuncFormatter(lambda y, _: '{:.0%}'.format(y)))
@@ -267,7 +267,7 @@ def plot_all_policies_agreement_overview(model, policies_list, delegate_prompt_n
     Returns:
         dict: Overview results with mean curves and data
     """
-    weights = np.arange(0.0, 2.01, 0.1)
+    weights = np.arange(0.0, 1.01, 0.1)
 
     print(f"Calculating overview agreement rates across {len(policies_list)} policies...")
 
@@ -347,7 +347,7 @@ def plot_all_policies_agreement_overview(model, policies_list, delegate_prompt_n
                  fontsize=16, fontweight='bold', pad=20)
         plt.grid(True, alpha=0.3)
         plt.ylim(0, 1)
-        plt.xlim(0, 2)
+        plt.xlim(0, 1)
         plt.legend(loc='upper right', fontsize=12)
 
         # Format y-axis as percentages
@@ -457,7 +457,7 @@ def generate_agreement_report(model, policies_list, delegate_prompt_nums, truste
                          fontsize=16, fontweight='bold', pad=20)
                 plt.grid(True, alpha=0.3)
                 plt.ylim(0, 1)
-                plt.xlim(0, 2)
+                plt.xlim(0, 1)
                 plt.legend(loc='upper right', fontsize=12)
 
                 # Format y-axis as percentages
@@ -565,7 +565,7 @@ def generate_agreement_report(model, policies_list, delegate_prompt_nums, truste
                     plt.ylabel('Agreement Rate', fontsize=9)
                     plt.grid(True, alpha=0.3)
                     plt.ylim(0, 1)
-                    plt.xlim(0, 2)
+                    plt.xlim(0, 1)
 
                     # Format y-axis as percentages
                     plt.gca().yaxis.set_major_formatter(plt.FuncFormatter(lambda y, _: '{:.0%}'.format(y)))
