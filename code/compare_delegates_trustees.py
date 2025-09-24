@@ -268,6 +268,26 @@ def plot_disagreement_by_delegate_prompts(model, policy_index, delegate_prompt_n
     print(f"Analyzing {len(weights)} weight points for each prompt pair...")
     print("=" * 80)
 
+    # Calculate trustee policy support (same for all delegate prompts, so do it once)
+    print(f"\nCalculating trustee policy support across {len(weights)} weight points...")
+    trustee_support_rates = []
+
+    for i, weight in enumerate(weights):
+        try:
+            # Get comparison data for this weight (using first delegate prompt for trustee data)
+            comparison_df = create_delegate_trustee_comparison(
+                model, policy_index, weight, trustee_prompt_num, delegate_prompt_nums[0], trustee_format
+            )
+
+            # Calculate trustee policy support rate (proportion voting "Yes")
+            trustee_yes_votes = (comparison_df['trustee_vote'] == 'Yes').sum()
+            trustee_support_rate = trustee_yes_votes / len(comparison_df)
+            trustee_support_rates.append(trustee_support_rate)
+
+        except Exception as e:
+            print(f"  Error calculating trustee support at weight {weight:.2f}: {e}")
+            trustee_support_rates.append(np.nan)
+
     # Process each delegate prompt
     for delegate_prompt_num in delegate_prompt_nums:
         print(f"\nProcessing delegate prompt {delegate_prompt_num}...")
@@ -335,13 +355,18 @@ def plot_disagreement_by_delegate_prompts(model, policy_index, delegate_prompt_n
         mean_across_prompts = np.nanmean(mean_disagreement_rates, axis=0)
 
         plt.plot(weights, mean_across_prompts,
-                color='black', linewidth=5, label='Mean Across All Prompts', alpha=0.9)
+                color='black', linewidth=5, label='Mean Disagreement Rate', alpha=0.9)
+
+        # Add trustee policy support line
+        plt.plot(weights, trustee_support_rates,
+                color='purple', linewidth=3, linestyle='-',
+                marker='s', markersize=6, label='Trustee Policy Support', alpha=0.8)
 
         plt.xlabel('Weight Parameter (Long-term Weight / Sigma)', fontsize=12)
-        plt.ylabel('Disagreement Rate', fontsize=12)
-        plt.title(f'Disagreement Patterns by Delegate Prompt Type\\n{model}, Policy {policy_index + 1}, Trustee Prompt {trustee_prompt_num}', fontsize=14)
+        plt.ylabel('Rate', fontsize=12)
+        plt.title(f'Disagreement Patterns & Trustee Policy Support\\n{model}, Policy {policy_index + 1}, Trustee Prompt {trustee_prompt_num}', fontsize=14)
         plt.grid(True, alpha=0.3)
-        plt.ylim(0,.5)  # Set y-axis range from 15% to 40%
+        plt.ylim(0, 1)  # Set y-axis range from 0% to 100% to accommodate both metrics
         plt.xlim(0, 2)
         plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
 
@@ -371,6 +396,12 @@ def plot_disagreement_by_delegate_prompts(model, policy_index, delegate_prompt_n
                 print(f"  Average disagreement: {avg_disagree:.1%}")
                 print(f"  Range: {max_disagree - min_disagree:.1%}")
                 print()
+
+    # Add trustee support data to results
+    all_results['trustee_support'] = {
+        'weights': weights,
+        'support_rates': trustee_support_rates
+    }
 
     return all_results
 

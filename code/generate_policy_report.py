@@ -39,8 +39,7 @@ def generate_policy_report(model, policies_list, delegate_prompt_nums, trustee_p
 
     # Generate default filename if not provided
     if output_file is None:
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        output_file = f"../data/plots/disagreement_report_{model}_{timestamp}.pdf"
+        output_file = f"../data/plots/{model}_{trustee_prompt_num}_{trustee_format}.pdf"
     elif not output_file.startswith('../data/plots/') and not os.path.isabs(output_file):
         # If relative path provided, put it in plots directory
         output_file = f"../data/plots/{output_file}"
@@ -194,7 +193,14 @@ def generate_policy_report(model, policies_list, delegate_prompt_nums, trustee_p
                         mean_across_prompts = np.nanmean(mean_disagreement_rates, axis=0)
 
                         plt.plot(weights, mean_across_prompts,
-                               color='black', linewidth=3, label='Mean', alpha=0.9)
+                               color='black', linewidth=3, label='Mean Disagreement', alpha=0.9)
+
+                    # Add trustee policy support line if available
+                    if 'trustee_support' in results:
+                        support_data = results['trustee_support']
+                        plt.plot(support_data['weights'], support_data['support_rates'],
+                               color='purple', linewidth=2, linestyle='-',
+                               marker='s', markersize=3, label='Trustee Policy Support', alpha=0.8)
 
                     # Get policy statement for title
                     policy_statement = policies_df.iloc[policy_index]['statement']
@@ -207,9 +213,9 @@ def generate_policy_report(model, policies_list, delegate_prompt_nums, trustee_p
                     # Format subplot
                     plt.title(policy_title, fontsize=10, fontweight='bold', wrap=True, pad=10)
                     plt.xlabel('Weight Parameter (Long-term Weight / Sigma)', fontsize=10)
-                    plt.ylabel('Disagreement Rate', fontsize=10)
+                    plt.ylabel('Rate', fontsize=10)
                     plt.grid(True, alpha=0.3)
-                    plt.ylim(0, max(0.5, 0.05 + max(mean_across_prompts)))
+                    plt.ylim(0, 1)  # Set to 0-100% to accommodate both disagreement and support rates
                     plt.xlim(0, 2)
 
                     # Format y-axis as percentages

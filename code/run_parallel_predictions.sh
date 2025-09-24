@@ -9,8 +9,8 @@ N_USERS=""  # Leave empty for all users, or set to a number
 MAX_PARALLEL=4  # Maximum number of parallel processes
 PROMPT_FILE="prompts_long_short_discount.json"
 # Policies to run (modify this list as needed)
-POLICIES=(0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19)
-#POLICIES=(0 1 2 3)
+#POLICIES=(0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19)
+POLICIES=(0)
 # Create logs directory
 LOG_DIR="logs"
 mkdir -p "$LOG_DIR"
