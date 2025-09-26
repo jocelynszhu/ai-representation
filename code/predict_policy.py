@@ -17,7 +17,7 @@ from openai import OpenAI
 
 load_dotenv()
 
-def load_data(prompt_file='prompts_long_short.json'):
+def load_data(prompt_file='prompts_long_short.json', policy_file='../self_selected_policies_new.jsonl'):
     """Load prompts, profiles, and policies data."""
     print(f"[{datetime.now().strftime('%H:%M:%S')}] Loading data...")
 
@@ -30,8 +30,9 @@ def load_data(prompt_file='prompts_long_short.json'):
     written_profiles = pd.read_json("gpt-4o_written_profiles.jsonl", encoding='cp1252', lines=True)
 
     # Load policies
-    policies = pd.read_json("../self_selected_policies.jsonl", lines=True)
-
+    print(policy_file)
+    policies = pd.read_json(policy_file, lines=True)
+    print(policies.head())
     print(f"[{datetime.now().strftime('%H:%M:%S')}] Loaded {len(prompts)} prompt sets from {prompt_file}, {len(written_profiles)} profiles, {len(policies)} policies")
 
     return prompts, written_profiles, policies
@@ -94,13 +95,14 @@ def get_llm_response(prompt, profile, policy, model_name):
     else:
         raise ValueError(f"Unsupported model: {model_name}")
 
-def predict_policy(policy_index, prompt_type, model_name, prompt_num, n_users, prompts, written_profiles, policies):
+def predict_policy(policy_index, prompt_type, policy_file, model_name, prompt_num, n_users, prompts, written_profiles, policies):
     """
     Predict utilities for all users on a single policy.
 
     Args:
         policy_index (int): Index of policy to test (0-based)
         prompt_type (str): "delegate_ls" or "trustee_ls"
+        policy_file (str): Policy file to use
         model_name (str): Model name for directory structure
         prompt_num (int): Prompt number for directory structure
         n_users (int or None): Number of users to process (None for all)
@@ -117,8 +119,12 @@ def predict_policy(policy_index, prompt_type, model_name, prompt_num, n_users, p
     prompt = prompts[str(prompt_num)][prompt_type]
 
     # Create output directory
-    output_dir = f"../data/{prompt_type}/{model_name}/prompt-{prompt_num}"
+    policy_file_clean = policy_file.split("/")[1].split(".")[0]
+    print(policy_file_clean)
+    #raise ValueError("Stop here")
+    output_dir = f"../data/{prompt_type}/{model_name}/{policy_file_clean}/prompt-{prompt_num}"
     os.makedirs(output_dir, exist_ok=True)
+
 
     # Output file path
     prefix = "t_" if "trustee" in prompt_type else "d_"
@@ -233,8 +239,10 @@ def main():
     """Main function with argument parsing."""
     parser = argparse.ArgumentParser(description='Predict utilities for a single policy')
 
-    parser.add_argument('--policy', type=int, required=True,
+    parser.add_argument('--policy', type=int, required=True, default=0,
                         help='Policy index to process (0-based)')
+    parser.add_argument('--policy-file', type=str, default='../self_selected_policies_new.jsonl',
+                        help='Policy file to use')
     parser.add_argument('--prompt-type', type=str, default='trustee_ls',
                         choices=['delegate_ls', 'trustee_ls', 'delegate_lsd', 'trustee_lsd'],
                         help='Type of prompt to use')
@@ -242,7 +250,7 @@ def main():
                         help='Model name (claude-3-sonnet-v2 or gpt-4o)')
     parser.add_argument('--prompt-num', type=int, default=0,
                         help='Prompt number to use')
-    parser.add_argument('--prompt-file', type=str, default='prompts_long_short_discount.json',
+    parser.add_argument('--prompt-file', type=str, default='prompts_long_short.json',
                         choices=['prompts_long_short.json', 'prompts_long_short_discount.json'],
                         help='Prompt file to use')
     parser.add_argument('--n-users', type=int, default=None,
@@ -273,7 +281,7 @@ def main():
 
     try:
         # Load data
-        prompts, written_profiles, policies = load_data(args.prompt_file)
+        prompts, written_profiles, policies = load_data(args.prompt_file, args.policy_file)
 
         # Validate policy index
         if args.policy >= len(policies):
@@ -291,7 +299,7 @@ def main():
 
         # Run prediction
         success_count, error_count = predict_policy(
-            args.policy, args.prompt_type, args.model,
+            args.policy, args.prompt_type, args.policy_file, args.model,
             args.prompt_num, args.n_users,
             prompts, written_profiles, policies
         )
