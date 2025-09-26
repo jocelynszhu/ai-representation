@@ -85,12 +85,43 @@ def run_gpt(prompt, profile, policy):
 
     return response.choices[0].message.content
 
+def run_grok(prompt, profile, policy):
+    """Execute Grok API call through OpenRouter."""
+    client = OpenAI(
+        base_url="https://openrouter.ai/api/v1",
+        api_key=os.environ["OPENROUTER_API_KEY"]
+    )
+
+    # Format the full prompt with bio and policy
+    full_prompt = f"{prompt.format(bio=profile)}\n\nPolicy proposal: {policy}"
+
+    messages = [
+        {
+            "role": "system",
+            "content": full_prompt
+        },
+        {
+            "role": "user",
+            "content": full_prompt
+        }
+    ]
+
+    response = client.chat.completions.create(
+        model="x-ai/grok-4",
+        messages=messages,
+        temperature=0.0
+    )
+
+    return response.choices[0].message.content
+
 def get_llm_response(prompt, profile, policy, model_name):
     """Route to appropriate LLM while using same prompts."""
     if model_name == "gpt-4o":
         return run_gpt(prompt, profile, policy)
     elif model_name.startswith("claude"):
         return run_claude(prompt, profile, policy)
+    elif model_name == "grok-4":
+        return run_grok(prompt, profile, policy)
     else:
         raise ValueError(f"Unsupported model: {model_name}")
 
@@ -239,7 +270,7 @@ def main():
                         choices=['delegate_ls', 'trustee_ls', 'delegate_lsd', 'trustee_lsd'],
                         help='Type of prompt to use')
     parser.add_argument('--model', type=str, default='claude-3-sonnet-v2',
-                        help='Model name (claude-3-sonnet-v2 or gpt-4o)')
+                        help='Model name (claude-3-sonnet-v2 or gpt-4o or grok-4)')
     parser.add_argument('--prompt-num', type=int, default=0,
                         help='Prompt number to use')
     parser.add_argument('--prompt-file', type=str, default='prompts_long_short_discount.json',
@@ -270,6 +301,11 @@ def main():
         if "ANTHROPIC_API_KEY" not in os.environ:
             print("Error: ANTHROPIC_API_KEY environment variable not set for Claude")
             sys.exit(1)
+    elif args.model.startswith("grok"):
+        if "OPENROUTER_API_KEY" not in os.environ:
+            print("Error: OPENROUTER_API_KEY environment variable not set for Grok")
+            sys.exit(1)
+
 
     try:
         # Load data
