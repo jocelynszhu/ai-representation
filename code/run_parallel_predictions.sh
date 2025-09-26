@@ -1,16 +1,37 @@
 #!/bin/bash
 # Simple Parallel Policy Prediction Runner
 
-# Configuration
+# Default configuration
 MODEL="claude-3-sonnet-v2"
-PROMPT_TYPE="trustee_lsd"
-PROMPT_NUM=0
+PROMPT_TYPE="trustee_ls"
+PROMPT_NUM=2  # Default value
 N_USERS=""  # Leave empty for all users, or set to a number
-MAX_PARALLEL=4  # Maximum number of parallel processes
-PROMPT_FILE="prompts_long_short_discount.json"
+MAX_PARALLEL=8  # Maximum number of parallel processes
+PROMPT_FILE="prompts_long_short.json"
+
+# Parse command line arguments
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        --prompt-num)
+            PROMPT_NUM="$2"
+            shift 2
+            ;;
+        -h|--help)
+            echo "Usage: $0 [--prompt-num NUM]"
+            echo "  --prompt-num NUM    Set the prompt number (default: 2)"
+            echo "  -h, --help          Show this help message"
+            exit 0
+            ;;
+        *)
+            echo "Unknown option: $1"
+            echo "Use -h or --help for usage information"
+            exit 1
+            ;;
+    esac
+done
 # Policies to run (modify this list as needed)
-#POLICIES=(0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19)
-POLICIES=(0)
+POLICIES=(0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19)
+#POLICIES=(0)
 # Create logs directory
 LOG_DIR="logs"
 mkdir -p "$LOG_DIR"
