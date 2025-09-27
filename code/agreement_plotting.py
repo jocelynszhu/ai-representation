@@ -483,8 +483,8 @@ def plot_mean_across_policies(
 policy_index = 12
 df = create_agreement_dataframe(
     policy_index=policy_index,
-    prompt_nums=[0, 1],
-    model="claude-3-sonnet-v2",
+    prompt_nums=[0, 1, 2],
+    model="gpt-4o",
     trustee_type="trustee_ls"
 )
 
@@ -499,22 +499,22 @@ plot_agreement_rates(df, policy_index=policy_index, trustee_type="trustee_ls")
 for policy_index in range(15):
     df = create_agreement_dataframe(
         policy_index=policy_index,
-        prompt_nums=[0, 1],
-        model="claude-3-sonnet-v2",
+        prompt_nums=[0, 1, 2],
+        model="gpt-4o",
         trustee_type="trustee_ls"
     )
 
     print("Agreement DataFrame created successfully")
     print(f"Shape: {df.shape}")
-    print(f"Columns: {list(df.columns)}")
+    print(f"Columns: {list(df.colwumns)}")
     print(f"Default vote: {df['default_vote'].iloc[0]}")
 
     # Create plot
     plot_agreement_rates(df, policy_index=policy_index, trustee_type="trustee_ls")
 #%%
-plot_mean_across_policies(policy_indices=range(15),
-                          prompt_nums=[0, 1],
-                          model="claude-3-sonnet-v2",
+plot_mean_across_policies(policy_indices=range(30),
+                          prompt_nums=[0, 1, 2],
+                          model="gpt-4o",
                           trustee_type="trustee_ls",
-                          consensus_filter="Yes")
+                          consensus_filter="No")
 #%%

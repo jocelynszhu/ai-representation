@@ -191,14 +191,14 @@ def get_vote_summary(data: Dict[str, pd.DataFrame]) -> Dict[str, Dict]:
 #%%
 
 #%%
-data_ls = load_policy_votes(
-    model="claude-3-sonnet-v2",
-    trustee_type="trustee_ls",
-    policy_index=0,
-    prompt_num=0
-)
-#%%
-data_ls['defaults']
+# data_ls = load_policy_votes(
+#     model="claude-3-sonnet-v2",
+#     trustee_type="trustee_ls",
+#     policy_index=0,
+#     prompt_num=0
+# )
+# #%%
+# data_ls['defaults']
 #%%
 # # Example usage
 # if __name__ == "__main__":
