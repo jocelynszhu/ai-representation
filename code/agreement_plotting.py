@@ -274,6 +274,211 @@ def plot_agreement_rates(
     if show_plot:
         plt.show()
 
+
+def plot_mean_across_policies(
+    policy_indices: List[int],
+    prompt_nums: List[int],
+    model: str,
+    trustee_type: str = "trustee_ls",
+    consensus_filter: Optional[str] = None,
+    show_plot: bool = True,
+    figsize: Tuple[int, int] = (12, 8)
+) -> pd.DataFrame:
+    """
+    Create a plot showing mean agreement rates across multiple policies.
+
+    Args:
+        policy_indices (List[int]): List of 0-based policy indices to average across
+        prompt_nums (List[int]): List of prompt numbers to analyze
+        model (str): Model name (e.g., "claude-3-sonnet-v2")
+        trustee_type (str): Either "trustee_ls" or "trustee_lsd"
+        consensus_filter (Optional[str]): Filter policies by consensus ("Yes", "No", or None for all)
+        show_plot (bool): Whether to display the plot
+        figsize (Tuple[int, int]): Figure size
+
+    Returns:
+        pd.DataFrame: DataFrame with mean agreement rates across policies
+    """
+    # Filter policies by consensus if specified
+    if consensus_filter is not None:
+        try:
+            policies_df = pd.read_json("../self_selected_policies_new.jsonl", lines=True)
+            filtered_indices = []
+            for policy_index in policy_indices:
+                if policy_index < len(policies_df):
+                    policy_consensus = policies_df.iloc[policy_index]['consensus']
+                    if policy_consensus == consensus_filter:
+                        filtered_indices.append(policy_index)
+            policy_indices = filtered_indices
+            print(f"Filtered to {len(policy_indices)} policies with consensus='{consensus_filter}'")
+        except Exception as e:
+            print(f"Warning: Could not filter by consensus: {e}")
+
+    print(f"Processing {len(policy_indices)} policies with {len(prompt_nums)} prompts...")
+
+    # Parameter range
+    alphas = np.arange(0.0, 1.01, 0.1)
+
+    # Initialize storage for collecting data across policies
+    trustee_data = {}  # {prompt_num: [policy_data_arrays]}
+    delegate_data = {}  # {prompt_num: [policy_data_arrays]}
+
+    for prompt_num in prompt_nums:
+        trustee_data[prompt_num] = []
+        delegate_data[prompt_num] = []
+
+    successful_policies = []
+
+    # Collect data from all policies
+    for policy_index in policy_indices:
+        try:
+            print(f"  Processing policy {policy_index + 1}...")
+
+            # Get agreement data for this policy
+            df = create_agreement_dataframe(
+                policy_index=policy_index,
+                prompt_nums=prompt_nums,
+                model=model,
+                trustee_type=trustee_type
+            )
+
+            # Extract data for each prompt
+            for prompt_num in prompt_nums:
+                trustee_col = f'trustee_prompt_{prompt_num}_agreement'
+                delegate_col = f'delegate_prompt_{prompt_num}_agreement'
+
+                if trustee_col in df.columns:
+                    trustee_data[prompt_num].append(df[trustee_col].values)
+
+                if delegate_col in df.columns:
+                    delegate_data[prompt_num].append(df[delegate_col].values)
+
+            successful_policies.append(policy_index)
+
+        except Exception as e:
+            print(f"  Error with policy {policy_index + 1}: {e}")
+            continue
+
+    print(f"Successfully processed {len(successful_policies)} policies")
+
+    # Calculate means across policies for each prompt
+    result_data = {'alpha_sigma': alphas}
+
+    # Process trustee data
+    trustee_means_for_overall = []
+    for prompt_num in prompt_nums:
+        if prompt_num in trustee_data and trustee_data[prompt_num]:
+            # Stack all policy data for this prompt and calculate mean
+            stacked_data = np.stack(trustee_data[prompt_num], axis=0)  # shape: (n_policies, n_alphas)
+            mean_across_policies = np.nanmean(stacked_data, axis=0)
+            result_data[f'trustee_prompt_{prompt_num}_mean'] = mean_across_policies
+            trustee_means_for_overall.append(mean_across_policies)
+        else:
+            result_data[f'trustee_prompt_{prompt_num}_mean'] = np.full(len(alphas), np.nan)
+
+    # Process delegate data
+    delegate_means_for_overall = []
+    for prompt_num in prompt_nums:
+        if prompt_num in delegate_data and delegate_data[prompt_num]:
+            stacked_data = np.stack(delegate_data[prompt_num], axis=0)
+            mean_across_policies = np.nanmean(stacked_data, axis=0)
+            result_data[f'delegate_prompt_{prompt_num}_mean'] = mean_across_policies
+            delegate_means_for_overall.append(mean_across_policies)
+        else:
+            result_data[f'delegate_prompt_{prompt_num}_mean'] = np.full(len(alphas), np.nan)
+
+    # Calculate overall means across all prompts
+    if trustee_means_for_overall:
+        trustee_overall = np.nanmean(np.stack(trustee_means_for_overall, axis=0), axis=0)
+        result_data['trustee_overall_mean'] = trustee_overall
+
+    if delegate_means_for_overall:
+        delegate_overall = np.nanmean(np.stack(delegate_means_for_overall, axis=0), axis=0)
+        result_data['delegate_overall_mean'] = delegate_overall
+
+    # Create DataFrame
+    result_df = pd.DataFrame(result_data)
+
+    # Create plot
+    if show_plot:
+        plt.figure(figsize=figsize)
+
+        # Plot individual prompt means (lighter opacity)
+        trustee_colors = ['blue', 'navy', 'steelblue', 'royalblue', 'cornflowerblue', 'mediumblue']
+        delegate_colors = ['red', 'darkred', 'crimson', 'lightcoral', 'indianred', 'firebrick']
+
+        # Plot trustee prompt means
+        for i, prompt_num in enumerate(prompt_nums):
+            col = f'trustee_prompt_{prompt_num}_mean'
+            if col in result_df.columns:
+                color = trustee_colors[i % len(trustee_colors)]
+                plt.plot(alphas, result_df[col],
+                        color=color, linewidth=2, alpha=0.7, linestyle='-',
+                        label=f'Trustee Prompt {prompt_num}')
+
+        # Plot delegate prompt means
+        for i, prompt_num in enumerate(prompt_nums):
+            col = f'delegate_prompt_{prompt_num}_mean'
+            if col in result_df.columns:
+                color = delegate_colors[i % len(delegate_colors)]
+                plt.plot(alphas, result_df[col],
+                        color=color, linewidth=2, alpha=0.7, linestyle='--',
+                        label=f'Delegate Prompt {prompt_num}')
+
+        # Plot overall means (thick, dark lines)
+        if 'trustee_overall_mean' in result_df.columns:
+            plt.plot(alphas, result_df['trustee_overall_mean'],
+                    color='darkblue', linewidth=4, alpha=1.0, linestyle='-',
+                    label='Trustee Overall Mean', zorder=10)
+
+        if 'delegate_overall_mean' in result_df.columns:
+            plt.plot(alphas, result_df['delegate_overall_mean'],
+                    color='darkred', linewidth=4, alpha=1.0, linestyle='--',
+                    label='Delegate Overall Mean', zorder=10)
+
+        # Formatting
+        param_label = "Long-term Weight" if trustee_type == "trustee_ls" else "Sigma"
+        plt.xlabel(f'{param_label}', fontsize=12)
+        plt.ylabel('Mean Agreement Rate with Default Vote', fontsize=12)
+
+        # Create title with consensus filter information
+        title_parts = [f'Mean Agreement Rates Across {len(successful_policies)} Policies']
+        if consensus_filter is not None:
+            title_parts.append(f'(Consensus: {consensus_filter})')
+        title_parts.append(f'{model}, {trustee_type.upper()}')
+
+        plt.title('\\n'.join(title_parts), fontsize=14, fontweight='bold')
+
+        plt.grid(True, alpha=0.3)
+        plt.ylim(0, 1)
+        plt.xlim(0, 1)
+
+        # Format y-axis as percentages
+        plt.gca().yaxis.set_major_formatter(plt.FuncFormatter(lambda y, _: '{:.0%}'.format(y)))
+
+        # Organize legend
+        handles, labels = plt.gca().get_legend_handles_labels()
+
+        # Separate entries
+        trustee_entries = [(h, l) for h, l in zip(handles, labels) if 'Trustee' in l]
+        delegate_entries = [(h, l) for h, l in zip(handles, labels) if 'Delegate' in l]
+
+        # Order: individual prompts first, then overall means
+        trustee_individual = [(h, l) for h, l in trustee_entries if 'Prompt' in l]
+        trustee_overall = [(h, l) for h, l in trustee_entries if 'Overall' in l]
+        delegate_individual = [(h, l) for h, l in delegate_entries if 'Prompt' in l]
+        delegate_overall = [(h, l) for h, l in delegate_entries if 'Overall' in l]
+
+        ordered_entries = trustee_individual + trustee_overall + delegate_individual + delegate_overall
+        ordered_handles, ordered_labels = zip(*ordered_entries) if ordered_entries else ([], [])
+
+        plt.legend(ordered_handles, ordered_labels, bbox_to_anchor=(1.05, 1), loc='upper left', fontsize=10)
+        plt.tight_layout()
+        plt.show()
+
+    return result_df
+
+
 #%%
 policy_index = 12
 df = create_agreement_dataframe(
@@ -307,29 +512,9 @@ for policy_index in range(15):
     # Create plot
     plot_agreement_rates(df, policy_index=policy_index, trustee_type="trustee_ls")
 #%%
-df
-# Example usage
-# if __name__ == "__main__":
-#     # Test with a single policy
-#     print("Testing agreement plotting functions...")
-
-#     try:
-#         # Create agreement DataFrame for policy 0 with prompts 0 and 1
-#         df = create_agreement_dataframe(
-#             policy_index=0,
-#             prompt_nums=[0],
-#             model="claude-3-sonnet-v2",
-#             trustee_type="trustee_ls"
-#         )
-
-#         print("Agreement DataFrame created successfully")
-#         print(f"Shape: {df.shape}")
-#         print(f"Columns: {list(df.columns)}")
-#         print(f"Default vote: {df['default_vote'].iloc[0]}")
-
-#         # Create plot
-#         plot_agreement_rates(df, policy_index=0, trustee_type="trustee_ls")
-
-#     except Exception as e:
-#         print(f"Error in example: {e}")
-# %%
+plot_mean_across_policies(policy_indices=range(15),
+                          prompt_nums=[0, 1],
+                          model="claude-3-sonnet-v2",
+                          trustee_type="trustee_ls",
+                          consensus_filter="Yes")
+#%%

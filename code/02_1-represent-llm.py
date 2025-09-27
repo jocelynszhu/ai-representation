@@ -13,14 +13,20 @@ policies = pd.read_json(policy_file, lines=True)
 api_key = os.environ["OPENAI_API_KEY"]
 
 task = """
-Vote yes or no on the given policy proposal. 
+Would you support the given policy proposal? Evaluate in your opinion whether this
+type of policy would be beneficial to society.
 
-Return a JSON object containing the 'reason', and 'vote' (either 'Yes' or 'No').
+Return a JSON object containing the 'reason', and 'vote' (either 'Yes' or 'No'). 
+Make sure the reason comes first, then the vote. The structure should be:
+{
+    "reason": [REASON_STRING],
+    "vote": [VOTE_STRING]
+}
 """
 
 # %%
-#model = "claude-3-sonnet-v2"
-model = "gpt-4o"
+model = "claude-3-sonnet-v2"
+#model = "gpt-4o"
 #model = "grok"
 for i in range(len(policies)):
     policy = policies.iloc[i].statement
