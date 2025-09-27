@@ -14,17 +14,20 @@ def get_llm_response(api_key, task, prompt, model="gpt-4o", **kwargs):
                 },
                 {"role": "user", "content": prompt},
             ]
+            print(messages)
 
             response = client.chat.completions.create(
                 model=model,
                 messages=messages,
                 temperature=0.0,
                 )
+            print(response)
             gpt_content = response.choices[0].message.content
             return gpt_content
         except Exception as e:
             print(e)
             return None
+
     elif model[:5] =="llama":
         try:
             client = ollama.Client(host="localhost")
@@ -43,8 +46,20 @@ def get_llm_response(api_key, task, prompt, model="gpt-4o", **kwargs):
         except Exception as e:
             print(e)
             return None
-
-    elif model == "claude-3-sonnet":
+            
+    elif model == "grok":
+        try:
+            client = OpenAI(api_key=os.environ["OPENROUTER_API_KEY"])
+            response = client.chat.completions.create(
+                model="x-ai/grok-4",
+                messages=messages,
+                temperature=0.0
+            )
+            return response.choices[0].message.content
+        except Exception as e:
+            print(e)
+            return None
+    elif model == "claude-3-sonnet-v2":
         try:
             client = anthropic.Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
             
@@ -67,6 +82,9 @@ def get_llm_response(api_key, task, prompt, model="gpt-4o", **kwargs):
         except Exception as e:
             print(e)
             return None
+
+
+            
 
 def process_claude_response(response):
     clean = response[ response.find('{') : response.rfind('}')+1 ]

@@ -7,7 +7,6 @@ PROMPT_TYPE="trustee_ls"
 PROMPT_NUM=2  # Default value
 N_USERS=""  # Leave empty for all users, or set to a number
 MAX_PARALLEL=8  # Maximum number of parallel processes
-PROMPT_FILE="prompts_long_short.json"
 
 # Parse command line arguments
 while [[ $# -gt 0 ]]; do
@@ -20,10 +19,6 @@ while [[ $# -gt 0 ]]; do
             PROMPT_TYPE="$2"
             shift 2
             ;;
-        --prompt-file)
-            PROMPT_FILE="$2"
-            shift 2
-            ;;
         --prompt-num)
             PROMPT_NUM="$2"
             shift 2
@@ -33,7 +28,6 @@ while [[ $# -gt 0 ]]; do
             echo "Options:"
             echo "  --model MODEL           Set the model (default: claude-3-sonnet-v2)"
             echo "  --prompt-type TYPE      Set the prompt type (default: trustee_ls)"
-            echo "  --prompt-file FILE      Set the prompt file (default: prompts_long_short.json)"
             echo "  --prompt-num NUM        Set the prompt number (default: 2)"
             echo "  -h, --help              Show this help message"
             exit 0
@@ -65,7 +59,7 @@ for ((i=0; i<${#POLICIES[@]}; i+=MAX_PARALLEL)); do
         echo "Starting policy $policy..."
 
         # Build command
-        cmd="python predict_policy.py --policy $policy --prompt-type $PROMPT_TYPE --model $MODEL --prompt-num $PROMPT_NUM --prompt-file $PROMPT_FILE"
+        cmd="python predict_policy.py --policy $policy --prompt-type $PROMPT_TYPE --model $MODEL --prompt-num $PROMPT_NUM"
         if [ -n "$N_USERS" ]; then
             cmd="$cmd --n-users $N_USERS"
         fi
