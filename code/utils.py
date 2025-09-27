@@ -10,18 +10,18 @@ def get_llm_response(api_key, task, prompt, model="gpt-4o", **kwargs):
             messages = [
                 {
                     "role": "system",
-                    "content": task.format(kwargs),
+                    "content": task,
                 },
                 {"role": "user", "content": prompt},
             ]
-            print(messages)
+            #print(messages)
 
             response = client.chat.completions.create(
                 model=model,
                 messages=messages,
                 temperature=0.0,
                 )
-            print(response)
+            #print(response)
             gpt_content = response.choices[0].message.content
             return gpt_content
         except Exception as e:
@@ -62,7 +62,8 @@ def get_llm_response(api_key, task, prompt, model="gpt-4o", **kwargs):
     elif model == "claude-3-sonnet-v2":
         try:
             client = anthropic.Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
-            
+            #print(prompt)
+            #raise Exception("Stop here")
             messages = [
                 {
                     "role": "user",

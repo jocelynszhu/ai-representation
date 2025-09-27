@@ -14,7 +14,7 @@ api_key = os.environ["OPENAI_API_KEY"]
 
 task = """
 Would you support the given policy proposal? Evaluate in your opinion whether this
-type of policy would be beneficial to society.
+type of policy would be beneficial to society as a whole.
 
 Return a JSON object containing the 'reason', and 'vote' (either 'Yes' or 'No'). 
 Make sure the reason comes first, then the vote. The structure should be:
@@ -25,8 +25,8 @@ Make sure the reason comes first, then the vote. The structure should be:
 """
 
 # %%
-model = "claude-3-sonnet-v2"
-#model = "gpt-4o"
+#model = "claude-3-sonnet-v2"
+model = "gpt-4o"
 #model = "grok"
 for i in range(len(policies)):
     policy = policies.iloc[i].statement
