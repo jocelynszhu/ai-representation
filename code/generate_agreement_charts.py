@@ -18,7 +18,7 @@ import json
 from compare_delegates_trustees import calculate_weighted_vote, calculate_discounted_vote
 
 
-def calculate_trustee_agreement_rate(model, policy_index, weights, trustee_prompt_num=0, trustee_format='trustee_ls'):
+def calculate_trustee_agreement_rate(model, policy_index, weights, policy_file,  trustee_prompt_num=0, trustee_format='trustee_ls'):
     """
     Calculate trustee agreement rate (proportion voting "Yes") across different weight parameters.
 
@@ -26,6 +26,7 @@ def calculate_trustee_agreement_rate(model, policy_index, weights, trustee_promp
         model (str): Model name (e.g., "claude-3-sonnet-v2" or "gpt-4o")
         policy_index (int): Policy index (0-based)
         weights (list): List of weight parameters to analyze
+        policy_file (str): Policy file to use
         trustee_prompt_num (int): Trustee prompt number
         trustee_format (str): Trustee data format ('trustee_ls' or 'trustee_lsd')
 
@@ -35,7 +36,7 @@ def calculate_trustee_agreement_rate(model, policy_index, weights, trustee_promp
     print(f"  Calculating trustee agreement rates for policy {policy_index + 1}...")
 
     # Construct trustee file path
-    trustee_file = f"../data/{trustee_format}/{model}/prompt-{trustee_prompt_num}/t_policy_{policy_index+1}_votes.jsonl"    
+    trustee_file = f"../data/{trustee_format}/{model}/{policy_file}/prompt-{trustee_prompt_num}/t_policy_{policy_index+1}_votes.jsonl"    
     #trustee_file = f"../data/{model}_policy_{policy_index}_prompt_{trustee_prompt_num}_{trustee_format}.jsonl"
 
     if not os.path.exists(trustee_file):
@@ -82,15 +83,16 @@ def calculate_trustee_agreement_rate(model, policy_index, weights, trustee_promp
     return agreement_rates
 
 
-def calculate_delegate_agreement_rate(model, policy_index, weights, delegate_prompt_nums, trustee_format='trustee_ls'):
+def calculate_delegate_agreement_rate(model, policy_index, weights, delegate_prompt_nums, policy_file, trustee_format='trustee_ls'):
     """
     Calculate delegate agreement rate (average proportion voting "Yes") across delegate prompts and weights.
 
     Args:
         model (str): Model name
         policy_index (int): Policy index (0-based)
-        weights (list): List of weight parameters to analyze
+        weights (list): List of weight parameters to analyze    
         delegate_prompt_nums (list): List of delegate prompt numbers
+        policy_file (str): Policy file to use
         trustee_format (str): Format to use for weight calculation consistency
 
     Returns:
@@ -102,7 +104,7 @@ def calculate_delegate_agreement_rate(model, policy_index, weights, delegate_pro
 
     for delegate_prompt_num in delegate_prompt_nums:
         # Construct delegate file path
-        delegate_file = f"../data/delegate/{model}/prompt-{delegate_prompt_num}/d_policy_{policy_index+1}_votes.jsonl"
+        delegate_file = f"../data/delegate_ls/{model}/{policy_file}/prompt-{delegate_prompt_num}/d_policy_{policy_index+1}_votes.jsonl"
         #delegate_file = f"../data/{model}_policy_{policy_index}_prompt_{delegate_prompt_num}_delegate.jsonl"
 
         if not os.path.exists(delegate_file):
@@ -155,129 +157,12 @@ def calculate_delegate_agreement_rate(model, policy_index, weights, delegate_pro
     return all_delegate_results
 
 
-def calculate_multi_trustee_agreement_rate(model, policy_index, trustee_prompt_nums):
-    """
-    Calculate trustee agreement rates for multiple trustee prompts using direct votes.
-
-    Args:
-        model (str): Model name
-        policy_index (int): Policy index (0-based)
-        trustee_prompt_nums (list): List of trustee prompt numbers
-
-    Returns:
-        dict: Agreement rates by trustee prompt, plus overall mean
-    """
-    print(f"  Calculating multi-trustee agreement rates for policy {policy_index + 1}...")
-
-    all_trustee_results = {}
-
-    for trustee_prompt_num in trustee_prompt_nums:
-        # Construct trustee file path from trustee directory
-        trustee_file = f"../data/trustee/{model}/prompt-{trustee_prompt_num}/t_policy_{policy_index+1}_votes.jsonl"
-
-        if not os.path.exists(trustee_file):
-            print(f"    Warning: Trustee file not found: {trustee_file}")
-            all_trustee_results[trustee_prompt_num] = np.nan
-            continue
-
-        try:
-            # Load and process trustee data (direct votes only)
-            trustee_votes = []
-
-            with open(trustee_file, 'r') as f:
-                for line in f:
-                    try:
-                        data = json.loads(line.strip())
-                        # Direct vote extraction (no weight calculations)
-                        vote = data.get('vote', 'No')  # Default to 'No' if missing
-                        trustee_votes.append(vote)
-                    except (json.JSONDecodeError, KeyError) as e:
-                        continue
-
-            if trustee_votes:
-                # Calculate agreement rate (proportion voting "Yes")
-                yes_votes = sum(1 for vote in trustee_votes if vote == 'Yes')
-                agreement_rate = yes_votes / len(trustee_votes)
-                all_trustee_results[trustee_prompt_num] = agreement_rate
-            else:
-                all_trustee_results[trustee_prompt_num] = np.nan
-
-        except Exception as e:
-            print(f"    Error calculating trustee agreement for prompt {trustee_prompt_num}: {e}")
-            all_trustee_results[trustee_prompt_num] = np.nan
-
-    # Calculate mean across all trustee prompts
-    valid_rates = [rate for rate in all_trustee_results.values() if not np.isnan(rate)]
-    if valid_rates:
-        all_trustee_results['mean'] = np.mean(valid_rates)
-    else:
-        all_trustee_results['mean'] = np.nan
-
-    return all_trustee_results
 
 
-def calculate_delegate_agreement_rate_direct(model, policy_index, delegate_prompt_nums):
-    """
-    Calculate delegate agreement rate using direct votes (no weight variation).
-
-    Args:
-        model (str): Model name
-        policy_index (int): Policy index (0-based)
-        delegate_prompt_nums (list): List of delegate prompt numbers
-
-    Returns:
-        dict: Agreement rates by delegate prompt, plus overall mean
-    """
-    print(f"  Calculating delegate agreement rates (direct) for policy {policy_index + 1}...")
-
-    all_delegate_results = {}
-
-    for delegate_prompt_num in delegate_prompt_nums:
-        # Construct delegate file path
-        delegate_file = f"../data/delegate/{model}/prompt-{delegate_prompt_num}/d_policy_{policy_index+1}_votes.jsonl"
-
-        if not os.path.exists(delegate_file):
-            print(f"    Warning: Delegate file not found: {delegate_file}")
-            all_delegate_results[delegate_prompt_num] = np.nan
-            continue
-
-        try:
-            # Load and process delegate data (direct votes only)
-            delegate_votes = []
-
-            with open(delegate_file, 'r') as f:
-                for line in f:
-                    try:
-                        data = json.loads(line.strip())
-                        vote = data.get('vote', 'No')  # Default to 'No' if missing
-                        delegate_votes.append(vote)
-                    except (json.JSONDecodeError, KeyError) as e:
-                        continue
-
-            if delegate_votes:
-                # Calculate agreement rate (proportion voting "Yes")
-                yes_votes = sum(1 for vote in delegate_votes if vote == 'Yes')
-                agreement_rate = yes_votes / len(delegate_votes)
-                all_delegate_results[delegate_prompt_num] = agreement_rate
-            else:
-                all_delegate_results[delegate_prompt_num] = np.nan
-
-        except Exception as e:
-            print(f"    Error calculating delegate agreement for prompt {delegate_prompt_num}: {e}")
-            all_delegate_results[delegate_prompt_num] = np.nan
-
-    # Calculate mean across all delegate prompts
-    valid_rates = [rate for rate in all_delegate_results.values() if not np.isnan(rate)]
-    if valid_rates:
-        all_delegate_results['mean'] = np.mean(valid_rates)
-    else:
-        all_delegate_results['mean'] = np.nan
-
-    return all_delegate_results
 
 
-def plot_agreement_comparison(model, policy_index, delegate_prompt_nums, trustee_prompt_num=0,
-                             trustee_format='trustee_ls', trustee_prompt_nums=None, show_plot=True):
+def plot_agreement_comparison(model, policy_index, delegate_prompt_nums, policy_file, trustee_prompt_num=0,
+                             trustee_format='trustee_ls', show_plot=True):
     """
     Generate agreement rate comparison plot for a single policy.
 
@@ -285,9 +170,9 @@ def plot_agreement_comparison(model, policy_index, delegate_prompt_nums, trustee
         model (str): Model name
         policy_index (int): Policy index (0-based)
         delegate_prompt_nums (list): List of delegate prompt numbers
+        policy_file (str): Policy file to use
         trustee_prompt_num (int): Trustee prompt number (weight-based)
         trustee_format (str): Trustee data format (weight-based)
-        trustee_prompt_nums (list): List of trustee prompt numbers (direct votes)
         show_plot (bool): Whether to display the plot
 
     Returns:
@@ -300,20 +185,13 @@ def plot_agreement_comparison(model, policy_index, delegate_prompt_nums, trustee
 
     # Calculate weight-based trustee agreement rates (existing functionality)
     trustee_agreement_rates = calculate_trustee_agreement_rate(
-        model, policy_index, weights, trustee_prompt_num, trustee_format
+        model, policy_index, weights, policy_file, trustee_prompt_num, trustee_format
     )
 
-    # Calculate direct delegate agreement rates (flat lines)
-    delegate_agreement_results = calculate_delegate_agreement_rate_direct(
-        model, policy_index, delegate_prompt_nums
+    # Calculate delegate agreement rates (with weights for consistency)
+    delegate_agreement_results = calculate_delegate_agreement_rate(
+        model, policy_index, weights, delegate_prompt_nums, policy_file, trustee_format
     )
-
-    # Calculate direct multi-trustee agreement rates (flat lines) if provided
-    multi_trustee_results = None
-    if trustee_prompt_nums is not None:
-        multi_trustee_results = calculate_multi_trustee_agreement_rate(
-            model, policy_index, trustee_prompt_nums
-        )
 
     # Create plot if requested
     if show_plot:
@@ -322,46 +200,27 @@ def plot_agreement_comparison(model, policy_index, delegate_prompt_nums, trustee
         # Plot weight-based trustee agreement rate (varies with weight)
         plt.plot(weights, trustee_agreement_rates,
                 color='navy', linewidth=3, marker='o', markersize=4,
-                label=f'Weight-based Trustee (Prompt {trustee_prompt_num}, {trustee_format})', alpha=0.8)
+                label=f'Trustee (Prompt {trustee_prompt_num}, {trustee_format})', alpha=0.8)
 
-        # Plot direct delegate agreement rates (flat lines)
+        # Plot delegate agreement rates (varies with weight)
         delegate_colors = ['red', 'darkred', 'lightcoral', 'crimson']
         for i, delegate_prompt_num in enumerate(delegate_prompt_nums):
             if delegate_prompt_num in delegate_agreement_results:
-                rate = delegate_agreement_results[delegate_prompt_num]
-                if not np.isnan(rate):
+                rates = delegate_agreement_results[delegate_prompt_num]
+                if not all(np.isnan(r) for r in rates):
                     color = delegate_colors[i % len(delegate_colors)]
-                    # Plot flat line across weight range
-                    plt.axhline(y=rate, color=color, linewidth=2, linestyle='--',
-                              label=f'Delegate Prompt {delegate_prompt_num} (Direct)', alpha=0.7)
+                    plt.plot(weights, rates, color=color, linewidth=2, linestyle='--',
+                           label=f'Delegate Prompt {delegate_prompt_num}', alpha=0.7)
 
-        # Plot mean delegate agreement rate (flat line)
-        if 'mean' in delegate_agreement_results and not np.isnan(delegate_agreement_results['mean']):
-            plt.axhline(y=delegate_agreement_results['mean'],
-                       color='red', linewidth=4, linestyle='-',
-                       label='Mean Delegate (Direct)', alpha=0.9)
-
-        # Plot direct multi-trustee agreement rates (flat lines) if available
-        if multi_trustee_results:
-            trustee_colors = ['blue', 'darkblue', 'lightblue', 'steelblue', 'royalblue']
-            for i, trustee_prompt_num_multi in enumerate(trustee_prompt_nums):
-                if trustee_prompt_num_multi in multi_trustee_results:
-                    rate = multi_trustee_results[trustee_prompt_num_multi]
-                    if not np.isnan(rate):
-                        color = trustee_colors[i % len(trustee_colors)]
-                        # Plot flat line across weight range
-                        plt.axhline(y=rate, color=color, linewidth=2, linestyle=':',
-                                  label=f'Multi-Trustee Prompt {trustee_prompt_num_multi} (Direct)', alpha=0.7)
-
-            # Plot mean multi-trustee agreement rate (flat line)
-            if 'mean' in multi_trustee_results and not np.isnan(multi_trustee_results['mean']):
-                plt.axhline(y=multi_trustee_results['mean'],
-                           color='blue', linewidth=4, linestyle='-',
-                           label='Mean Multi-Trustee (Direct)', alpha=0.9)
+        # Plot mean delegate agreement rate
+        if 'mean' in delegate_agreement_results and not all(np.isnan(r) for r in delegate_agreement_results['mean']):
+            plt.plot(weights, delegate_agreement_results['mean'],
+                   color='red', linewidth=4, linestyle='-',
+                   label='Mean Delegate', alpha=0.9)
 
         # Load policy statement for title
         try:
-            policies_df = pd.read_json("../self_selected_policies.jsonl", lines=True)
+            policies_df = pd.read_json("../self_selected_policies_new.jsonl", lines=True)
             policy_statement = policies_df.iloc[policy_index]['statement']
             if len(policy_statement) > 70:
                 policy_title = policy_statement[:67] + "..."
@@ -393,15 +252,14 @@ def plot_agreement_comparison(model, policy_index, delegate_prompt_nums, trustee
     results = {
         'weights': weights.tolist(),
         'trustee_agreement_rates': trustee_agreement_rates,
-        'delegate_agreement_results': delegate_agreement_results,
-        'multi_trustee_results': multi_trustee_results
+        'delegate_agreement_results': delegate_agreement_results
     }
 
     return results
 
 
-def plot_all_policies_agreement_overview(model, policies_list, delegate_prompt_nums, trustee_prompt_num=0,
-                                        trustee_format='trustee_ls', trustee_prompt_nums=None, show_plot=True):
+def plot_all_policies_agreement_overview(model, policies_list, delegate_prompt_nums, policy_file, trustee_prompt_num=0,
+                                        trustee_format='trustee_ls', show_plot=True):
     """
     Generate overview plot showing mean agreement rates across all policies.
 
@@ -409,6 +267,7 @@ def plot_all_policies_agreement_overview(model, policies_list, delegate_prompt_n
         model (str): Model name
         policies_list (list): List of policy indices
         delegate_prompt_nums (list): List of delegate prompt numbers
+        policy_file (str): Policy file to use
         trustee_prompt_num (int): Trustee prompt number
         trustee_format (str): Trustee data format
         show_plot (bool): Whether to display the plot
@@ -420,10 +279,9 @@ def plot_all_policies_agreement_overview(model, policies_list, delegate_prompt_n
 
     print(f"Calculating overview agreement rates across {len(policies_list)} policies...")
 
-    # Collect weight-based trustee curves and direct vote rates
+    # Collect weight-based trustee curves and delegate curves
     all_trustee_curves = []  # Weight-based trustee (varies with weight)
-    all_delegate_direct_rates = []  # Direct delegate votes (single values)
-    all_multi_trustee_direct_rates = []  # Direct multi-trustee votes (single values)
+    all_delegate_curves = []  # Delegate curves (varies with weight)
     successful_policies = []
 
     for policy_index in policies_list:
@@ -432,79 +290,70 @@ def plot_all_policies_agreement_overview(model, policies_list, delegate_prompt_n
 
             # Calculate weight-based trustee agreement rates (varies with weight)
             trustee_rates = calculate_trustee_agreement_rate(
-                model, policy_index, weights, trustee_prompt_num, trustee_format
+                model, policy_index, weights, policy_file, trustee_prompt_num, trustee_format
             )
 
-            # Calculate direct delegate agreement rates (flat values)
-            delegate_results = calculate_delegate_agreement_rate_direct(
-                model, policy_index, delegate_prompt_nums
+            # Calculate delegate agreement rates (varies with weight)
+            delegate_results = calculate_delegate_agreement_rate(
+                model, policy_index, weights, delegate_prompt_nums, policy_file, trustee_format
             )
 
-            # Calculate direct multi-trustee agreement rates (flat values) if provided
-            multi_trustee_results = None
-            if trustee_prompt_nums is not None:
-                multi_trustee_results = calculate_multi_trustee_agreement_rate(
-                    model, policy_index, trustee_prompt_nums
-                )
-
-            # Check if we have valid weight-based trustee data
+            # Check if we have valid trustee data
             if not all(np.isnan(r) for r in trustee_rates):
                 all_trustee_curves.append(np.array(trustee_rates))
 
-                # Add delegate direct rates if available
-                if 'mean' in delegate_results and not np.isnan(delegate_results['mean']):
-                    all_delegate_direct_rates.append(delegate_results['mean'])
-
-                # Add multi-trustee direct rates if available
-                if multi_trustee_results and 'mean' in multi_trustee_results and not np.isnan(multi_trustee_results['mean']):
-                    all_multi_trustee_direct_rates.append(multi_trustee_results['mean'])
+                # Add delegate curves if available
+                if 'mean' in delegate_results and not all(np.isnan(r) for r in delegate_results['mean']):
+                    all_delegate_curves.append(np.array(delegate_results['mean']))
 
                 successful_policies.append(policy_index)
                 print("✓")
             else:
-                print("(no weight-based trustee data)")
+                print("(no trustee data)")
 
         except Exception as e:
             print(f"(error: {e})")
 
     if not all_trustee_curves:
-        print("No valid weight-based trustee data found for overview")
+        print("No valid trustee data found for overview")
         return None
 
     # Calculate means
     # Weight-based trustee mean (varies with weight)
     trustee_overall_mean = np.nanmean(all_trustee_curves, axis=0)
 
-    # Direct vote means (single values)
-    delegate_direct_mean = np.nanmean(all_delegate_direct_rates) if all_delegate_direct_rates else np.nan
-    multi_trustee_direct_mean = np.nanmean(all_multi_trustee_direct_rates) if all_multi_trustee_direct_rates else np.nan
+    # Delegate mean (varies with weight)
+    delegate_overall_mean = np.nanmean(all_delegate_curves, axis=0) if all_delegate_curves else np.full_like(trustee_overall_mean, np.nan)
 
     # Create plot if requested
     if show_plot:
         plt.figure(figsize=(16, 12))
 
-        # Plot individual weight-based trustee curves as light blue lines
+        # Plot individual trustee curves as light blue lines
         for i, curve in enumerate(all_trustee_curves):
             policy_idx = successful_policies[i]
             plt.plot(weights, curve, color='#add8e6', alpha=0.3, linewidth=0.8)
 
-        # Plot weight-based trustee overall mean (varies with weight)
+        # Plot individual delegate curves as light red lines
+        for i, curve in enumerate(all_delegate_curves):
+            plt.plot(weights, curve, color='#ffcccb', alpha=0.3, linewidth=0.8)
+
+        # Plot trustee overall mean (varies with weight)
         plt.plot(weights, trustee_overall_mean, color='navy', linewidth=4,
-               label=f'Mean Weight-based Trustee (Prompt {trustee_prompt_num}, {trustee_format})', alpha=0.9)
+               label=f'Mean Trustee (Prompt {trustee_prompt_num}, {trustee_format})', alpha=0.9)
 
-        # Plot direct delegate mean (flat horizontal line)
-        if not np.isnan(delegate_direct_mean):
-            plt.axhline(y=delegate_direct_mean, color='red', linewidth=4, linestyle='-',
-                       label='Mean Direct Delegate Agreement', alpha=0.9)
+        # Plot delegate overall mean (varies with weight)
+        if not all(np.isnan(delegate_overall_mean)):
+            plt.plot(weights, delegate_overall_mean, color='red', linewidth=4,
+                   label='Mean Delegate', alpha=0.9)
 
-        # Plot direct multi-trustee mean (flat horizontal line)
-        if not np.isnan(multi_trustee_direct_mean):
-            plt.axhline(y=multi_trustee_direct_mean, color='blue', linewidth=4, linestyle='-',
-                       label='Mean Direct Multi-Trustee Agreement', alpha=0.9)
-
-        # Add legend entries for individual weight-based trustee lines
+        # Add legend entries for individual lines
         plt.plot([], [], color='#add8e6', alpha=0.3, linewidth=0.8,
-               label='Individual Policy Weight-based Trustee Rates')
+               label='Individual Policy Trustee Rates')
+
+        if all_delegate_curves:
+            plt.plot([], [], color='#ffcccb', alpha=0.3, linewidth=0.8,
+                   label='Individual Policy Delegate Rates')
 
         # Format plot
         plt.xlabel('Weight Parameter (Long-term Weight / Sigma)', fontsize=14)
@@ -512,11 +361,9 @@ def plot_all_policies_agreement_overview(model, policies_list, delegate_prompt_n
 
         # Update title to reflect the data types being shown
         title_parts = [f'Agreement Rates Overview - All Policies\\n{model}']
-        title_parts.append(f'Weight-based Trustee: Prompt {trustee_prompt_num} ({trustee_format})')
-        if not np.isnan(delegate_direct_mean):
-            title_parts.append(f'Direct Delegates: Prompts {delegate_prompt_nums}')
-        if not np.isnan(multi_trustee_direct_mean) and trustee_prompt_nums:
-            title_parts.append(f'Direct Multi-Trustees: Prompts {trustee_prompt_nums}')
+        title_parts.append(f'Trustee: Prompt {trustee_prompt_num} ({trustee_format})')
+        if all_delegate_curves:
+            title_parts.append(f'Delegates: Prompts {delegate_prompt_nums}')
         title_parts.append(f'{len(successful_policies)} policies')
 
         plt.title(', '.join(title_parts), fontsize=16, fontweight='bold', pad=20)
@@ -534,15 +381,15 @@ def plot_all_policies_agreement_overview(model, policies_list, delegate_prompt_n
     return {
         'weights': weights.tolist(),
         'trustee_overall_mean': trustee_overall_mean.tolist(),
-        'delegate_direct_mean': delegate_direct_mean,
-        'multi_trustee_direct_mean': multi_trustee_direct_mean,
+        'delegate_overall_mean': delegate_overall_mean.tolist(),
         'all_trustee_curves': all_trustee_curves,
+        'all_delegate_curves': all_delegate_curves,
         'successful_policies': successful_policies
     }
 
 
-def generate_agreement_report(model, policies_list, delegate_prompt_nums, trustee_prompt_num=0,
-                             trustee_format='trustee_ls', trustee_prompt_nums=None, output_file=None, policies_per_page=4):
+def generate_agreement_report(model, policies_list, delegate_prompt_nums, policy_file, trustee_prompt_num=0,
+                        trustee_format='trustee_ls', output_file=None, policies_per_page=4):
     """
     Generate a PDF report with agreement rate comparison plots for multiple policies.
 
@@ -550,6 +397,7 @@ def generate_agreement_report(model, policies_list, delegate_prompt_nums, truste
         model (str): Model name
         policies_list (list): List of policy indices to analyze (0-based)
         delegate_prompt_nums (list): List of delegate prompt numbers
+        policy_file (str): Policy file to use
         trustee_prompt_num (int): Trustee prompt number
         trustee_format (str): Trustee data format
         output_file (str): Output PDF filename (default: auto-generated)
@@ -594,39 +442,42 @@ def generate_agreement_report(model, policies_list, delegate_prompt_nums, truste
 
             # Generate overview data (suppress display)
             overview_results = plot_all_policies_agreement_overview(
-                model, policies_list, delegate_prompt_nums, trustee_prompt_num, trustee_format,
-                trustee_prompt_nums, show_plot=False
+                model, policies_list, delegate_prompt_nums, policy_file, trustee_prompt_num, trustee_format,
+                show_plot=False
             )
 
             if overview_results:
                 weights = overview_results['weights']
                 trustee_mean = overview_results['trustee_overall_mean']
-                delegate_direct_mean = overview_results['delegate_direct_mean']
-                multi_trustee_direct_mean = overview_results['multi_trustee_direct_mean']
+                delegate_mean = overview_results['delegate_overall_mean']
                 all_trustee_curves = overview_results['all_trustee_curves']
+                all_delegate_curves = overview_results['all_delegate_curves']
                 successful_policies = overview_results['successful_policies']
 
-                # Plot individual weight-based trustee curves as light blue lines
+                # Plot individual trustee curves as light blue lines
                 for i, curve in enumerate(all_trustee_curves):
                     plt.plot(weights, curve, color='#add8e6', alpha=0.25, linewidth=0.6)
 
-                # Plot weight-based trustee overall mean (varies with weight)
+                # Plot individual delegate curves as light red lines
+                for i, curve in enumerate(all_delegate_curves):
+                    plt.plot(weights, curve, color='#ffcccb', alpha=0.25, linewidth=0.6)
+
+                # Plot trustee overall mean (varies with weight)
                 plt.plot(weights, trustee_mean, color='navy', linewidth=4,
-                       label=f'Mean Weight-based Trustee (Prompt {trustee_prompt_num}, {trustee_format})', alpha=0.9)
+                       label=f'Mean Trustee (Prompt {trustee_prompt_num}, {trustee_format})', alpha=0.9)
 
-                # Plot direct delegate mean (flat horizontal line)
-                if not np.isnan(delegate_direct_mean):
-                    plt.axhline(y=delegate_direct_mean, color='red', linewidth=4, linestyle='-',
-                               label='Mean Direct Delegate Agreement', alpha=0.9)
+                # Plot delegate overall mean (varies with weight)
+                if not all(np.isnan(delegate_mean)):
+                    plt.plot(weights, delegate_mean, color='red', linewidth=4,
+                           label='Mean Delegate', alpha=0.9)
 
-                # Plot direct multi-trustee mean (flat horizontal line)
-                if not np.isnan(multi_trustee_direct_mean):
-                    plt.axhline(y=multi_trustee_direct_mean, color='blue', linewidth=4, linestyle='-',
-                               label='Mean Direct Multi-Trustee Agreement', alpha=0.9)
-
-                # Add legend entry for individual weight-based trustee lines
+                # Add legend entries for individual lines
                 plt.plot([], [], color='#add8e6', alpha=0.25, linewidth=0.6,
-                       label='Individual Policy Weight-based Trustee Rates')
+                       label='Individual Policy Trustee Rates')
+
+                if all_delegate_curves:
+                    plt.plot([], [], color='#ffcccb', alpha=0.25, linewidth=0.6,
+                           label='Individual Policy Delegate Rates')
 
                 # Format plot
                 plt.xlabel('Weight Parameter (Long-term Weight / Sigma)', fontsize=14)
@@ -634,11 +485,9 @@ def generate_agreement_report(model, policies_list, delegate_prompt_nums, truste
 
                 # Update title to reflect the data types being shown
                 title_parts = [f'Agreement Rates Overview - All Policies\\n{model}']
-                title_parts.append(f'Weight-based Trustee: Prompt {trustee_prompt_num} ({trustee_format})')
-                if not np.isnan(delegate_direct_mean):
-                    title_parts.append(f'Direct Delegates: Prompts {delegate_prompt_nums}')
-                if not np.isnan(multi_trustee_direct_mean) and trustee_prompt_nums:
-                    title_parts.append(f'Direct Multi-Trustees: Prompts {trustee_prompt_nums}')
+                title_parts.append(f'Trustee: Prompt {trustee_prompt_num} ({trustee_format})')
+                if all_delegate_curves:
+                    title_parts.append(f'Delegates: Prompts {delegate_prompt_nums}')
                 title_parts.append(f'{len(successful_policies)} policies')
 
                 plt.title(', '.join(title_parts), fontsize=14, fontweight='bold', pad=20)
@@ -707,55 +556,37 @@ def generate_agreement_report(model, policies_list, delegate_prompt_nums, truste
                     # Generate agreement rate data (suppress display)
                     results = plot_agreement_comparison(
                         model, policy_index, delegate_prompt_nums,
-                        trustee_prompt_num, trustee_format, trustee_prompt_nums, show_plot=False
+                        policy_file, trustee_prompt_num, trustee_format, show_plot=False
                     )
 
                     weights = results['weights']
                     trustee_rates = results['trustee_agreement_rates']
                     delegate_results = results['delegate_agreement_results']
-                    multi_trustee_results = results['multi_trustee_results']
 
-                    # Plot weight-based trustee agreement rate (varies with weight)
+                    # Plot trustee agreement rate (varies with weight)
                     plt.plot(weights, trustee_rates,
                            color='navy', linewidth=2, marker='o', markersize=2,
-                           label=f'Weight-based Trustee (Prompt {trustee_prompt_num})', alpha=0.8)
+                           label=f'Trustee (Prompt {trustee_prompt_num})', alpha=0.8)
 
-                    # Plot direct delegate agreement rates (flat lines)
-                    if 'mean' in delegate_results and not np.isnan(delegate_results['mean']):
-                        plt.axhline(y=delegate_results['mean'],
-                                   color='red', linewidth=2.5, linestyle='-',
-                                   label='Mean Delegate (Direct)', alpha=0.8)
+                    # Plot delegate agreement rates (varies with weight)
+                    if 'mean' in delegate_results and not all(np.isnan(r) for r in delegate_results['mean']):
+                        plt.plot(weights, delegate_results['mean'],
+                               color='red', linewidth=2.5, linestyle='-',
+                               label='Mean Delegate', alpha=0.8)
 
-                    # Plot individual delegate prompts (flat lines)
+                    # Plot individual delegate prompts
                     delegate_colors = ['lightcoral', 'crimson', 'darkred']
                     for j, delegate_prompt_num in enumerate(delegate_prompt_nums):
-                        if delegate_prompt_num in delegate_results and not np.isnan(delegate_results[delegate_prompt_num]):
-                            rate = delegate_results[delegate_prompt_num]
+                        if delegate_prompt_num in delegate_results and not all(np.isnan(r) for r in delegate_results[delegate_prompt_num]):
+                            rates = delegate_results[delegate_prompt_num]
                             color = delegate_colors[j % len(delegate_colors)]
-                            plt.axhline(y=rate,
-                                       color=color, linewidth=1.5, linestyle='--',
-                                       label=f'Delegate {delegate_prompt_num} (Direct)', alpha=0.6)
-
-                    # Plot multi-trustee results (flat lines) if available
-                    if multi_trustee_results:
-                        if 'mean' in multi_trustee_results and not np.isnan(multi_trustee_results['mean']):
-                            plt.axhline(y=multi_trustee_results['mean'],
-                                       color='blue', linewidth=2.5, linestyle='-',
-                                       label='Mean Multi-Trustee (Direct)', alpha=0.8)
-
-                        # Plot individual multi-trustee prompts (flat lines)
-                        trustee_colors = ['lightblue', 'steelblue', 'darkblue', 'royalblue', 'midnightblue']
-                        for j, trustee_prompt_num_multi in enumerate(trustee_prompt_nums or []):
-                            if trustee_prompt_num_multi in multi_trustee_results and not np.isnan(multi_trustee_results[trustee_prompt_num_multi]):
-                                rate = multi_trustee_results[trustee_prompt_num_multi]
-                                color = trustee_colors[j % len(trustee_colors)]
-                                plt.axhline(y=rate,
-                                           color=color, linewidth=1.5, linestyle=':',
-                                           label=f'Multi-Trustee {trustee_prompt_num_multi} (Direct)', alpha=0.6)
+                            plt.plot(weights, rates,
+                                   color=color, linewidth=1.5, linestyle='--',
+                                   label=f'Delegate {delegate_prompt_num}', alpha=0.6)
 
                     # Get policy statement for title
                     try:
-                        policies_df = pd.read_json("../self_selected_policies.jsonl", lines=True)
+                        policies_df = pd.read_json("../self_selected_policies_new.jsonl", lines=True)
                         policy_statement = policies_df.iloc[policy_index]['statement']
                         if len(policy_statement) > 50:
                             policy_title = policy_statement[:47] + "..."
@@ -826,20 +657,19 @@ def main():
                        help='Model name (claude-3-sonnet-v2 or gpt-4o) (default: gpt-4o)')
     parser.add_argument('--policies', type=str, default='0-19',
                        help='Policy range (e.g., "0-19" or "0,1,2,3") (default: 0-19)')
-    parser.add_argument('--delegate-prompts', type=str, default='0,1,2,3',
+    parser.add_argument('--delegate-prompts', type=str, default='0,1',
                        help='Delegate prompt numbers (comma-separated) (default: 0,1,2,3)')
     parser.add_argument('--trustee-prompt', type=int, default=0,
                        help='Trustee prompt number (default: 0)')
-    parser.add_argument('--trustee-format', type=str, default='trustee_lsd',
+    parser.add_argument('--trustee-format', type=str, default='trustee_ls',
                        choices=['trustee_ls', 'trustee_lsd'],
                        help='Trustee data format for weight-based analysis (default: trustee_lsd)')
-    parser.add_argument('--trustee-prompts', type=str, default='0,1,2,3,4',
-                       help='Trustee prompt numbers for direct vote analysis (comma-separated) (default: 0,1,2,3,4)')
     parser.add_argument('--output', type=str, default=None,
                        help='Output PDF filename (default: auto-generated)')
     parser.add_argument('--policies-per-page', type=int, default=4,
                        help='Number of policies per page (default: 4 for 2x2 grid)')
-
+    parser.add_argument('--policy-file', type=str, default='self_selected_policies_new',
+                       help='Policy file to use')
     args = parser.parse_args()
 
     # Parse policies list
@@ -860,12 +690,6 @@ def main():
         print(f"Error: Invalid delegate prompts format '{args.delegate_prompts}'. Use '0,1,2,3'")
         sys.exit(1)
 
-    # Parse trustee prompts for direct votes
-    try:
-        trustee_prompt_nums = [int(p.strip()) for p in args.trustee_prompts.split(',')]
-    except ValueError:
-        print(f"Error: Invalid trustee prompts format '{args.trustee_prompts}'. Use '0,1,2,3,4'")
-        sys.exit(1)
 
     # Validate arguments
     if not policies_list:
@@ -880,7 +704,7 @@ def main():
         # Generate report
         output_file = generate_agreement_report(
             args.model, policies_list, delegate_prompt_nums,
-            args.trustee_prompt, args.trustee_format, trustee_prompt_nums, args.output, args.policies_per_page
+            args.policy_file, args.trustee_prompt, args.trustee_format, args.output, args.policies_per_page
         )
 
         print(f"\\n🎉 Agreement rates report generation completed successfully!")

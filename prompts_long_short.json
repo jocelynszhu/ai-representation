@@ -1,14 +1,11 @@
 {
     "0": {
-        "delegate_ls": "Here is a written profile of a person that is voting on a policy proposal: {bio}. How would this person vote on the given issue? \n\nReturn a JSON object containing the 'reason' and 'vote' (either 'Yes' or 'No').",
         "trustee_ls": "Here is a written profile of a person that is voting on a policy proposal: {bio}\nYour goal: Evaluate the **short-term** and **long-term** utility to this participant if you vote **YES** versus **NO** on this proposal.\n\n- Score the utility out of 100, where **100 = very good for the participant** in the short/long term.\n- Return a JSON object in the following structure:\n\n{{\n  \"yes_vote\": {{\n    \"reasoning\": \"[REASONING]\",\n    \"short_util\": [SHORT_SCORE],\n    \"long_util\": [LONG_SCORE]\n  }},\n  \"no_vote\": {{\n    \"reasoning\": \"[REASONING]\",\n    \"short_util\": [SHORT_SCORE],\n    \"long_util\": [LONG_SCORE]\n  }}\n}}"
     },
     "1": {
-        "delegate_ls": "Here is a written profile of a person that is voting on a policy proposal: {bio}. What vote seems most consistent with this person's background for the given issue? \n\nReturn a JSON object containing the 'reason' and 'vote' (either 'Yes' or 'No').",
         "trustee_ls": "We have given you a bio of a person that must choose whether they are for or against a policy: {bio}. You are tasked with predicting what the short and long term benefit to this person is if the policy were to pass (YES) or fail (NO). The benefit should be scored on a scale of 0-100. 100 is very beneficial to the participant, whereas 0 is very detrimental.\n\nReturn a JSON object in the following structure:\n\n{{\n  \"yes_vote\": {{\n    \"reasoning\": \"[REASONING]\",\n    \"long_util\": [LONG_SCORE],\n    \"short_util\": [SHORT_SCORE]\n  }},\n  \"no_vote\": {{\n    \"reasoning\": \"[REASONING]\",\n    \"long_util\": [LONG_SCORE],\n    \"short_util\": [SHORT_SCORE]\n  }}\n}}"
     },
     "2": {
-        "delegate_ls": "Here is a written profile of a person that is voting on a policy proposal: {bio}. Under the delegate model (where a representative casts their vote exactly as this person would) how would a delegate vote on the given issue? \n\nReturn a JSON object containing the 'reason' and 'vote' (either 'Yes' or 'No').",
         "trustee_ls": "Given a participant bio, predict the short- and long-term impact on the person if the policy passes (YES) or fails (NO). The bio is {bio}. \\nScore each on a 0–100 scale (0 = very harmful, 100 = very positive).\n\n{{\n  \"yes_vote\": {{\n    \"reasoning\": \"[REASONING]\",\n    \"long_util\": [LONG_SCORE],\n    \"short_util\": [SHORT_SCORE]\n  }},\n  \"no_vote\": {{\n    \"reasoning\": \"[REASONING]\",\n    \"long_util\": [LONG_SCORE],\n    \"short_util\": [SHORT_SCORE]\n  }}\n}}"
     }
 } 

@@ -17,12 +17,19 @@ from openai import OpenAI
 
 load_dotenv()
 
-def load_data(prompt_file='prompts_long_short.json', policy_file='../self_selected_policies_new.jsonl'):
+def load_data(prompt_type='trustee_ls', policy_file='../self_selected_policies_new.jsonl'):
     """Load prompts, profiles, and policies data."""
     print(f"[{datetime.now().strftime('%H:%M:%S')}] Loading data...")
 
     # Load prompts from specified file
-    prompt_path = f'../{prompt_file}'
+    if prompt_type == 'delegate':
+        prompt_path = f'../delegate_prompts.json'
+    elif prompt_type == 'trustee_ls':
+        prompt_path = f'../prompts_long_short.json'
+    elif prompt_type == 'trustee_lsd':
+        prompt_path = f'../prompts_long_short_discount.json'
+    else:
+        raise ValueError(f"Invalid prompt type: {prompt_type}")
     with open(prompt_path, 'r') as f:
         prompts = json.load(f)
 
@@ -33,7 +40,7 @@ def load_data(prompt_file='prompts_long_short.json', policy_file='../self_select
     print(policy_file)
     policies = pd.read_json(policy_file, lines=True)
     print(policies.head())
-    print(f"[{datetime.now().strftime('%H:%M:%S')}] Loaded {len(prompts)} prompt sets from {prompt_file}, {len(written_profiles)} profiles, {len(policies)} policies")
+    print(f"[{datetime.now().strftime('%H:%M:%S')}] Loaded {len(prompts)} prompt sets from {prompt_path}, {len(written_profiles)} profiles, {len(policies)} policies")
 
     return prompts, written_profiles, policies
 
@@ -132,7 +139,7 @@ def predict_policy(policy_index, prompt_type, policy_file, model_name, prompt_nu
 
     Args:
         policy_index (int): Index of policy to test (0-based)
-        prompt_type (str): "delegate_ls" or "trustee_ls"
+        prompt_type (str): "delegate" or "trustee_ls" or "trustee_lsd"
         policy_file (str): Policy file to use
         model_name (str): Model name for directory structure
         prompt_num (int): Prompt number for directory structure
@@ -275,15 +282,15 @@ def main():
     parser.add_argument('--policy-file', type=str, default='../self_selected_policies_new.jsonl',
                         help='Policy file to use')
     parser.add_argument('--prompt-type', type=str, default='trustee_ls',
-                        choices=['delegate_ls', 'trustee_ls', 'delegate_lsd', 'trustee_lsd'],
+                        choices=['delegate', 'trustee_ls', 'trustee_lsd'],
                         help='Type of prompt to use')
     parser.add_argument('--model', type=str, default='claude-3-sonnet-v2',
                         help='Model name (claude-3-sonnet-v2 or gpt-4o or grok-4)')
     parser.add_argument('--prompt-num', type=int, default=0,
                         help='Prompt number to use')
-    parser.add_argument('--prompt-file', type=str, default='prompts_long_short.json',
-                        choices=['prompts_long_short.json', 'prompts_long_short_discount.json'],
-                        help='Prompt file to use')
+    # parser.add_argument('--prompt-file', type=str, default='prompts_long_short.json',
+    #                     choices=['delegate_prompts.json', 'prompts_long_short.json', 'prompts_long_short_discount.json'],
+    #                     help='Prompt file to use')
     parser.add_argument('--n-users', type=int, default=None,
                         help='Number of users to process (default: all)')
     parser.add_argument('--quiet', action='store_true',
@@ -317,7 +324,7 @@ def main():
 
     try:
         # Load data
-        prompts, written_profiles, policies = load_data(args.prompt_file, args.policy_file)
+        prompts, written_profiles, policies = load_data(args.prompt_type, args.policy_file)
 
         # Validate policy index
         if args.policy >= len(policies):

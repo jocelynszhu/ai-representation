@@ -1,0 +1,17 @@
+{
+    "0": {
+        "delegate": "Here is a written profile of a person that is voting on a policy proposal: {bio}. How would this person vote on the given issue? \n\nReturn a JSON object containing the 'reason' and 'vote' (either 'Yes' or 'No')."
+    },
+    "1": {
+        "delegate": "Here is a written profile of a person that is voting on a policy proposal: {bio}. Predict how this person would vote on the given issue.\n\nReturn a JSON object containing the 'reason' and 'vote' (either 'Yes' or 'No')."
+    },
+    "2": {
+        "delegate": "Here is a written profile of a person that is voting on a policy proposal: {bio}. What vote seems most consistent with this person's background for the given issue? \n\nReturn a JSON object containing the 'reason' and 'vote' (either 'Yes' or 'No')."
+    },
+    "3": {
+        "delegate": "Here is a written profile of a person that is voting on a policy proposal: {bio}. Acting as this person's proxy, how would you vote on their behalf for the given issue? \n\nReturn a JSON object containing the 'reason' and 'vote' (either 'Yes' or 'No')."
+    },
+    "4": {
+        "delegate": "Here is a written profile of a person that is voting on a policy proposal: {bio}. Under the delegate model (where a representative casts their vote exactly as this person would) how would a delegate vote on the given issue? \n\nReturn a JSON object containing the 'reason' and 'vote' (either 'Yes' or 'No')."
+    }
+} 
