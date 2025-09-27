@@ -1,15 +1,30 @@
-{"id": 1, "statement": "We should increase the minimum wage.", "topic": "Macroeconomics", "consensus":"No"}
-{"id": 2, "statement": "Abortion should be more strictly regulated.", "topic": "Reproductive Rights", "consensus":"No"}
-{"id": 3, "statement": "Diversity of race and gender should be encouraged.", "topic": "Civil Rights", "consensus":"No"}
-{"id": 4, "statement": "We should provide universal healthcare coverage.", "topic": "Health", "consensus":"No"}
-{"id": 5, "statement": "Sex education should be mandatory in schools.", "topic": "Education", "consensus":"No"}
-{"id": 7, "statement": "We should increase the amount of immigration into the country.", "topic": "Immigration", "consensus":"No"}
-{"id": 6, "statement": "People should eat less meat to reduce the impact on the environment.", "topic": "Environment", "consensus":"No"}
-{"id": 8, "statement": "People convicted of violent crimes should be sentenced to longer prison terms.", "topic": "Law and Crime", "consensus":"No"}
-{"id": 9, "statement": "The government should provide a pension for everyone over the age of 65.", "topic": "Social Welfare", "consensus":"No"}
-{"id": 10, "statement": "The government pay for housing, or provide housing, for people who are homeless.", "topic": "Housing", "consensus":"No"}
-{"id": 12, "statement": "Genetically modified organisms (GMOs) should NOT be allowed in food.", "topic": "Health", "consensus":"Yes"}
-{"id": 12, "statement": "We should NOT require parents to have their children vaccinated to attend public schools.", "topic": "Health", "consensus":"Yes"}
-{"id": 13, "statement": "Tarrifs should be increased on most imports to protect domestic industries.", "topic": "Trade", "consensus":"Yes"}
-{"id": 14, "statement": "We should keep fluoride in the water supply to prevent tooth decay.", "topic": "Health", "consensus":"Yes"}
-{"id": 15, "statement": "We should restrict the amount of carbon emissions by humans to reduce the impact on the environment.", "topic": "Environment", "consensus":"Yes"}
+{"id": 1, "statement": "We should increase the minimum wage.", "topic": "Macroeconomics", "consensus": "No"}
+{"id": 2, "statement": "We should keep the minimum wage at its current level or lower it as it is too high right now.", "topic": "Macroeconomics", "consensus": "No"}
+{"id": 3, "statement": "Abortion should be more strictly regulated.", "topic": "Reproductive Rights", "consensus": "No"}
+{"id": 4, "statement": "Abortion laws should be made less restrictive.", "topic": "Reproductive Rights", "consensus": "No"}
+{"id": 5, "statement": "Race and gender should be allowed to be a factor in hiring and admissions to increase diversity.", "topic": "Civil Rights", "consensus": "No"}
+{"id": 6, "statement": "Hiring and admissions should focus solely on merit, and race and gender should not be used as a factor..", "topic": "Civil Rights", "consensus": "No"}
+{"id": 7, "statement": "We should provide universal healthcare coverage.", "topic": "Health", "consensus": "No"}
+{"id": 8, "statement": "Healthcare should not be universal; people should choose and pay for their own plans without government intervention.", "topic": "Health", "consensus": "No"}
+{"id": 9, "statement": "Sex education should be mandatory in schools.", "topic": "Education", "consensus": "No"}
+{"id": 10, "statement": "Sex education should be optional or left to parents’ discretion.", "topic": "Education", "consensus": "No"}
+{"id": 11, "statement": "People should eat less meat to reduce the impact on the environment.", "topic": "Environment", "consensus": "No"}
+{"id": 12, "statement": "People should be free to eat as much meat as they want without government pressure.", "topic": "Environment", "consensus": "No"}
+{"id": 13, "statement": "We should increase the amount of immigration into the United States.", "topic": "Immigration", "consensus": "No"}
+{"id": 14, "statement": "We should limit or reduce immigration levels into the United States.", "topic": "Immigration", "consensus": "No"}
+{"id": 15, "statement": "People convicted of violent crimes should be sentenced to longer prison terms.", "topic": "Law and Crime", "consensus": "No"}
+{"id": 16, "statement": "Sentences for violent crimes are already sufficient and should likely be reduced further.", "topic": "Law and Crime", "consensus": "No"}
+{"id": 17, "statement": "The government should provide a pension for everyone over the age of 65.", "topic": "Social Welfare", "consensus": "No"}
+{"id": 18, "statement": "Pensions should be earned individually, not provided universally by the government.", "topic": "Social Welfare", "consensus": "No"}
+{"id": 19, "statement": "The government pay for housing, or provide housing, for people who are homeless.", "topic": "Housing", "consensus": "No"}
+{"id": 20, "statement": "The government should not be responsible for providing housing to the homeless.", "topic": "Housing", "consensus": "No"}
+{"id": 21, "statement": "Genetically modified organisms (GMOs) should NOT be allowed in food.", "topic": "Health", "consensus": "Yes"}
+{"id": 22, "statement": "GMOs should be allowed in food because they are safe to consume.", "topic": "Health", "consensus": "Yes"}
+{"id": 23, "statement": "We should NOT require parents to have their children vaccinated to attend public schools.", "topic": "Health", "consensus": "Yes"}
+{"id": 24, "statement": "Children should be required to be vaccinated to attend public schools.", "topic": "Health", "consensus": "Yes"}
+{"id": 25, "statement": "Tarrifs should be increased on most imports to protect domestic industries.", "topic": "Trade", "consensus": "Yes"}
+{"id": 26, "statement": "Tariffs should be kept low to promote free trade.", "topic": "Trade", "consensus": "Yes"}
+{"id": 27, "statement": "We should keep fluoride in the water supply to prevent tooth decay.", "topic": "Health", "consensus": "Yes"}
+{"id": 28, "statement": "Fluoride should be removed from public water supplies.", "topic": "Health", "consensus": "Yes"}
+{"id": 29, "statement": "We should restrict the amount of carbon emissions by humans to reduce the impact on the environment.", "topic": "Environment", "consensus": "Yes"}
+{"id": 30, "statement": "Carbon emissions should not be restricted by government regulations.", "topic": "Environment", "consensus": "Yes"}
