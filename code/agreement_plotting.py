@@ -42,6 +42,7 @@ def create_agreement_dataframe(
     # Load default vote for this policy
     default_data = load_policy_votes(model, trustee_type, policy_index, prompt_nums[0])
     default_vote = default_data['defaults']['vote'].iloc[0] if len(default_data['defaults']) > 0 else "Unknown"
+    print(default_vote)
     result_data['default_vote'] = [default_vote] * len(alphas)
 
     print(f"Default model vote for policy {policy_index + 1}: {default_vote}")
@@ -274,7 +275,23 @@ def plot_agreement_rates(
         plt.show()
 
 #%%
-for policy_index in range(10):
+policy_index = 12
+df = create_agreement_dataframe(
+    policy_index=policy_index,
+    prompt_nums=[0, 1],
+    model="claude-3-sonnet-v2",
+    trustee_type="trustee_ls"
+)
+
+print("Agreement DataFrame created successfully")
+print(f"Shape: {df.shape}")
+print(f"Columns: {list(df.columns)}")
+print(f"Default vote: {df['default_vote'].iloc[0]}")
+
+# Create plot
+plot_agreement_rates(df, policy_index=policy_index, trustee_type="trustee_ls")
+#%%
+for policy_index in range(15):
     df = create_agreement_dataframe(
         policy_index=policy_index,
         prompt_nums=[0, 1],
