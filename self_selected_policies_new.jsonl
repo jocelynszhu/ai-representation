@@ -18,13 +18,13 @@
 {"id": 18, "statement": "Pensions should be earned individually, not provided universally by the government.", "topic": "Social Welfare", "consensus": "No"}
 {"id": 19, "statement": "The government pay for housing, or provide housing, for people who are homeless.", "topic": "Housing", "consensus": "No"}
 {"id": 20, "statement": "The government should not be responsible for providing housing to the homeless.", "topic": "Housing", "consensus": "No"}
-{"id": 21, "statement": "Genetically modified organisms (GMOs) should NOT be allowed in food.", "topic": "Health", "consensus": "Yes"}
-{"id": 22, "statement": "GMOs should be allowed in food because they are safe to consume.", "topic": "Health", "consensus": "Yes"}
-{"id": 23, "statement": "We should NOT require parents to have their children vaccinated to attend public schools.", "topic": "Health", "consensus": "Yes"}
-{"id": 24, "statement": "Children should be required to be vaccinated to attend public schools.", "topic": "Health", "consensus": "Yes"}
-{"id": 25, "statement": "Tarrifs should be increased on most imports to protect domestic industries.", "topic": "Trade", "consensus": "Yes"}
-{"id": 26, "statement": "Tariffs should be kept low to promote free trade.", "topic": "Trade", "consensus": "Yes"}
-{"id": 27, "statement": "We should keep fluoride in the water supply to prevent tooth decay.", "topic": "Health", "consensus": "Yes"}
-{"id": 28, "statement": "Fluoride should be removed from public water supplies.", "topic": "Health", "consensus": "Yes"}
-{"id": 29, "statement": "We should restrict the amount of carbon emissions by humans to reduce the impact on the environment.", "topic": "Environment", "consensus": "Yes"}
-{"id": 30, "statement": "Carbon emissions should not be restricted by government regulations.", "topic": "Environment", "consensus": "Yes"}
+{"id": 21, "statement": "Genetically modified organisms (GMOs) should NOT be allowed in food.", "topic": "Health", "consensus": "Yes", "expert_vote": "No"}
+{"id": 22, "statement": "GMOs should be allowed in food because they are safe to consume.", "topic": "Health", "consensus": "Yes", "expert_vote": "Yes"}
+{"id": 23, "statement": "We should NOT require parents to have their children vaccinated to attend public schools.", "topic": "Health", "consensus": "Yes", "expert_vote": "No"}
+{"id": 24, "statement": "Children should be required to be vaccinated to attend public schools.", "topic": "Health", "consensus": "Yes", "expert_vote": "Yes"}
+{"id": 25, "statement": "Tarrifs should be increased on most imports to protect domestic industries.", "topic": "Trade", "consensus": "Yes", "expert_vote": "No"}
+{"id": 26, "statement": "Tariffs should be kept low to promote free trade.", "topic": "Trade", "consensus": "Yes", "expert_vote"    : "Yes"}
+{"id": 27, "statement": "We should keep fluoride in the water supply to prevent tooth decay.", "topic": "Health", "consensus": "Yes", "expert_vote": "Yes"}
+{"id": 28, "statement": "Fluoride should be removed from public water supplies.", "topic": "Health", "consensus": "Yes", "expert_vote": "No"}
+{"id": 29, "statement": "We should restrict the amount of carbon emissions by humans to reduce the impact on the environment.", "topic": "Environment", "consensus": "Yes", "expert_vote": "Yes"}
+{"id": 30, "statement": "Carbon emissions should not be restricted by government regulations.", "topic": "Environment", "consensus": "Yes", "expert_vote": "No"}

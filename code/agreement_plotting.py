@@ -47,7 +47,7 @@ def create_agreement_dataframe(
 
     print(f"Default model vote for policy {policy_index + 1}: {default_vote}")
 
-    # Process each prompt
+    # Process each promptw
     for prompt_num in prompt_nums:
         print(f"  Processing prompt {prompt_num}...")
 
