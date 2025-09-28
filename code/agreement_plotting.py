@@ -616,15 +616,25 @@ def plot_mean_across_policies(
 #     # Create plot
 #     plot_agreement_rates(df, policy_index=policy_index, trustee_type="trustee_ls")
 #%%
-for model in ["claude-3-sonnet-v2", "gpt-4o"]:
-    for trustee_type in ["trustee_ls", "trustee_lsd"]:
-        for consensus_filter in ["No", "Yes"]:
-            plot_mean_across_policies(policy_indices=range(30),
-                                    delegate_prompt_nums=[0, 1, 2, 3, 4],
-                                    trustee_prompt_nums=[0, 1, 2],
-                                    model=model,
-                                    trustee_type=trustee_type,
-                                    consensus_filter=consensus_filter,
-                                    compare_expert=False)
-        #plt.show()
-#%%
+# for model in ["claude-3-sonnet-v2", "gpt-4o"]:
+#     for trustee_type in ["trustee_ls", "trustee_lsd"]:
+#         for consensus_filter in ["No", "Yes"]:
+#             plot_mean_across_policies(policy_indices=range(30),
+#                                     delegate_prompt_nums=[0, 1, 2, 3, 4],
+#                                     trustee_prompt_nums=[0, 1, 2],
+#                                     model=model,
+#                                     trustee_type=trustee_type,
+#                                     consensus_filter=consensus_filter,
+#                                     compare_expert=False)
+#         #plt.show()
+# #%%
+# plot_mean_across_policies(policy_indices=range(30),
+#                         delegate_prompt_nums=[0, 1, 2, 3, 4],
+#                         trustee_prompt_nums=[0, 1, 2],
+#                         model="gpt-4o",
+#                         trustee_type="both",
+#                         consensus_filter="No",
+#                         compare_expert=False)
+# %%
+
+# %%
