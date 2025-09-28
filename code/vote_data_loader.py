@@ -40,7 +40,7 @@ def load_policy_votes(
     # Handle different directory structures for trustee data
     if trustee_type == "trustee_lsd":
         # trustee_lsd uses a different structure
-        trustee_file = f"{base_path}/{trustee_type}/{model}/prompt-{prompt_num}/t_policy_{policy_id}_votes.jsonl"
+        trustee_file = f"{base_path}/{trustee_type}/{model}/self_selected_policies_new/prompt-{prompt_num}/t_policy_{policy_id}_votes.jsonl"
     else:
         # trustee_ls uses self_selected_policies_new structure
         trustee_file = f"{base_path}/{trustee_type}/{model}/self_selected_policies_new/prompt-{prompt_num}/t_policy_{policy_id}_votes.jsonl"
