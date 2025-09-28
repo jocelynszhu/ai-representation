@@ -15,7 +15,8 @@ def create_agreement_dataframe(
     policy_index: int,
     prompt_nums: List[int],
     model: str,
-    trustee_type: str = "trustee_ls"
+    trustee_type: str = "trustee_ls",
+    compare_expert: bool = False
 ) -> pd.DataFrame:
     """
     Create a DataFrame with agreement rates across alpha/sigma parameters for different prompts.
@@ -25,6 +26,7 @@ def create_agreement_dataframe(
         prompt_nums (List[int]): List of prompt numbers to analyze
         model (str): Model name (e.g., "claude-3-sonnet-v2")
         trustee_type (str): Either "trustee_ls" or "trustee_lsd"
+        compare_expert (bool): If True, compare to expert vote instead of model default
 
     Returns:
         pd.DataFrame: DataFrame with alpha/sigma values and agreement rates for each prompt
@@ -42,10 +44,25 @@ def create_agreement_dataframe(
     # Load default vote for this policy
     default_data = load_policy_votes(model, trustee_type, policy_index, prompt_nums[0])
     default_vote = default_data['defaults']['vote'].iloc[0] if len(default_data['defaults']) > 0 else "Unknown"
-    print(default_vote)
-    result_data['default_vote'] = [default_vote] * len(alphas)
 
-    print(f"Default model vote for policy {policy_index + 1}: {default_vote}")
+    # Determine reference vote (expert or default)
+    if compare_expert:
+        expert_vote = _get_expert_vote(policy_index)
+        if expert_vote is not None:
+            reference_vote = expert_vote
+            vote_type = "expert"
+            print(f"Using expert vote for policy {policy_index + 1}: {expert_vote}")
+        else:
+            reference_vote = default_vote
+            vote_type = "default"
+            print(f"No expert vote found for policy {policy_index + 1}, using default: {default_vote}")
+    else:
+        reference_vote = default_vote
+        vote_type = "default"
+        print(f"Using default model vote for policy {policy_index + 1}: {default_vote}")
+
+    result_data['reference_vote'] = [reference_vote] * len(alphas)
+    result_data['vote_type'] = [vote_type] * len(alphas)
 
     # Process each promptw
     for prompt_num in prompt_nums:
@@ -59,13 +76,13 @@ def create_agreement_dataframe(
             trustee_agreements = []
             for alpha in alphas:
                 agreement_rate = _calculate_trustee_agreement_rate(
-                    data['trustee'], alpha, trustee_type, default_vote
+                    data['trustee'], alpha, trustee_type, reference_vote
                 )
                 trustee_agreements.append(agreement_rate)
 
             # Calculate delegate agreement rate (constant across alpha)
             delegate_agreement = _calculate_delegate_agreement_rate(
-                data['delegate'], default_vote
+                data['delegate'], reference_vote
             )
             delegate_agreements = [delegate_agreement] * len(alphas)
 
@@ -94,14 +111,25 @@ def create_agreement_dataframe(
 
     return df
 
+def _get_expert_vote(policy_index: int) -> Optional[str]:
+    """Get expert vote for a policy if it exists."""
+    try:
+        policies_df = pd.read_json("../self_selected_policies_new.jsonl", lines=True)
+        if policy_index < len(policies_df):
+            policy_data = policies_df.iloc[policy_index]
+            return policy_data.get('expert_vote', None)
+    except Exception as e:
+        print(f"Warning: Could not load expert vote for policy {policy_index + 1}: {e}")
+    return None
+
 #%%
 def _calculate_trustee_agreement_rate(
     trustee_data: pd.DataFrame,
     alpha: float,
     trustee_type: str,
-    default_vote: str
+    reference_vote: str
 ) -> float:
-    """Calculate agreement rate between trustee votes and default vote for given alpha."""
+    """Calculate agreement rate between trustee votes and reference vote for given alpha."""
     votes = []
 
     for _, row in trustee_data.iterrows():
@@ -151,20 +179,20 @@ def _calculate_trustee_agreement_rate(
     if not votes:
         return np.nan
 
-    # Calculate agreement rate with default vote
-    agreements = sum(1 for vote in votes if vote == default_vote)
+    # Calculate agreement rate with reference vote
+    agreements = sum(1 for vote in votes if vote == reference_vote)
     return agreements / len(votes)
 
 #%%
 def _calculate_delegate_agreement_rate(
     delegate_data: pd.DataFrame,
-    default_vote: str
+    reference_vote: str
 ) -> float:
-    """Calculate agreement rate between delegate votes and default vote."""
+    """Calculate agreement rate between delegate votes and reference vote."""
     if len(delegate_data) == 0:
         return np.nan
 
-    agreements = sum(1 for vote in delegate_data['vote'] if vote == default_vote)
+    agreements = sum(1 for vote in delegate_data['vote'] if vote == reference_vote)
     return agreements / len(delegate_data)
 
 #%%
@@ -190,7 +218,8 @@ def plot_agreement_rates(
 
     # Get data
     alphas = agreement_df['alpha_sigma']
-    default_vote = agreement_df['default_vote'].iloc[0]
+    reference_vote = agreement_df.get('reference_vote', agreement_df.get('default_vote', ["Unknown"]))[0]
+    vote_type = agreement_df.get('vote_type', ["default"])[0]
 
     # Get individual prompt columns
     trustee_cols = [col for col in agreement_df.columns if col.startswith('trustee_prompt_') and 'mean' not in col]
@@ -240,8 +269,11 @@ def plot_agreement_rates(
     # Formatting
     param_label = "Long-term Weight" if trustee_type == "trustee_ls" else "Sigma"
     plt.xlabel(f'{param_label}', fontsize=12)
-    plt.ylabel('Agreement Rate with Default Vote', fontsize=12)
-    plt.title(f'Agreement Rates vs {param_label}\\n{policy_title}\\nDefault Vote: {default_vote}',
+
+    # Dynamic labeling based on vote type
+    vote_label = "Expert Vote" if vote_type == "expert" else "Default Vote"
+    plt.ylabel(f'Agreement Rate with {vote_label}', fontsize=12)
+    plt.title(f'Agreement Rates vs {param_label}\\n{policy_title}\\n{vote_label}: {reference_vote}',
               fontsize=13, fontweight='bold')
 
     plt.grid(True, alpha=0.3)
@@ -281,6 +313,7 @@ def plot_mean_across_policies(
     model: str,
     trustee_type: str = "trustee_ls",
     consensus_filter: Optional[str] = None,
+    compare_expert: bool = False,
     show_plot: bool = True,
     figsize: Tuple[int, int] = (12, 8)
 ) -> pd.DataFrame:
@@ -293,6 +326,7 @@ def plot_mean_across_policies(
         model (str): Model name (e.g., "claude-3-sonnet-v2")
         trustee_type (str): Either "trustee_ls" or "trustee_lsd"
         consensus_filter (Optional[str]): Filter policies by consensus ("Yes", "No", or None for all)
+        compare_expert (bool): If True, compare to expert votes instead of model defaults for policies with expert votes
         show_plot (bool): Whether to display the plot
         figsize (Tuple[int, int]): Figure size
 
@@ -339,7 +373,8 @@ def plot_mean_across_policies(
                 policy_index=policy_index,
                 prompt_nums=prompt_nums,
                 model=model,
-                trustee_type=trustee_type
+                trustee_type=trustee_type,
+                compare_expert=compare_expert
             )
 
             # Extract data for each prompt
@@ -439,10 +474,15 @@ def plot_mean_across_policies(
         # Formatting
         param_label = "Long-term Weight" if trustee_type == "trustee_ls" else "Sigma"
         plt.xlabel(f'{param_label}', fontsize=12)
-        plt.ylabel('Mean Agreement Rate with Default Vote', fontsize=12)
+
+        # Determine y-axis label based on comparison type
+        y_label = 'Mean Agreement Rate with Expert Vote' if compare_expert else 'Mean Agreement Rate with Default Vote'
+        plt.ylabel(y_label, fontsize=12)
 
         # Create title with consensus filter information
         title_parts = [f'Mean Agreement Rates Across {len(successful_policies)} Policies']
+        if compare_expert:
+            title_parts.append('(vs Expert Votes)')
         if consensus_filter is not None:
             title_parts.append(f'(Consensus: {consensus_filter})')
         title_parts.append(f'{model}, {trustee_type.upper()}')
@@ -519,6 +559,7 @@ for model in ["claude-3-sonnet-v2", "gpt-4o"]:
                                     prompt_nums=[0, 1, 2],
                                     model=model,
                                     trustee_type=trustee_type,
-                                    consensus_filter=consensus_filter)
+                                    consensus_filter=consensus_filter,
+                                    compare_expert=False)
         #plt.show()
 #%%
