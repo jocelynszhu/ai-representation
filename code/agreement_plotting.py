@@ -483,9 +483,9 @@ def plot_mean_across_policies(
 policy_index = 2
 df = create_agreement_dataframe(
     policy_index=policy_index,
-    prompt_nums=[ 2],
+    prompt_nums=[0, 1, 2],
     model="claude-3-sonnet-v2",
-    trustee_type="trustee_lsd"
+    trustee_type="trustee_ls"
 )
 
 print("Agreement DataFrame created successfully")
