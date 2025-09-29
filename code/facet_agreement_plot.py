@@ -76,30 +76,25 @@ def create_facet_agreement_plot(
             for prompt_num in trustee_prompt_nums:
                 col_name = f'trustee_ls_prompt_{prompt_num}_mean'
                 if col_name in df.columns:
-                    line = ax.plot(alphas, df[col_name],
-                                 color=trustee_color_light, linewidth=1, alpha=0.6,
-                                 linestyle='-', zorder=1)
-                    if not legend_created:
-                        legend_elements.append((line[0], "Trustee (Long/Short)"))
+                    ax.plot(alphas, df[col_name],
+                           color=trustee_color_light, linewidth=1, alpha=0.8,
+                           linestyle='-', zorder=1)
 
             # Plot individual trustee_lsd prompts (thin, light blue)
             for prompt_num in trustee_prompt_nums:
                 col_name = f'trustee_lsd_prompt_{prompt_num}_mean'
                 if col_name in df.columns:
-                    line = ax.plot(alphas, df[col_name],
-                                 color=trustee_color_light, linewidth=1, alpha=0.6,
-                                 linestyle='-', zorder=1)
-                    if not legend_created:
-                        legend_elements.append((line[0], "Trustee (Exponential)"))
+                    ax.plot(alphas, df[col_name],
+                           color=trustee_color_light, linewidth=1, alpha=0.8,
+                           linestyle='-', zorder=1)
 
-            # Plot individual delegate prompts (thin, light red, dotted)
+            # Plot individual delegate prompts (thin, light red, dashed)
             for prompt_num in delegate_prompt_nums:
                 col_name = f'delegate_prompt_{prompt_num}_mean'
                 if col_name in df.columns:
-                    line = ax.plot(alphas, df[col_name],
-                                 color=delegate_color_light, linewidth=1, alpha=0.6,
-                                 linestyle=':', zorder=1)
-                    # Only add to legend once (we'll use the delegate mean for legend)
+                    ax.plot(alphas, df[col_name],
+                           color=delegate_color_light, linewidth=1, alpha=0.8,
+                           linestyle=(0, (5, 5)), zorder=1)  # Custom dash pattern
 
             # Plot trustee overall mean (thick, dark blue)
             if 'trustee_overall_mean' in df.columns:
@@ -109,18 +104,18 @@ def create_facet_agreement_plot(
                 if not legend_created:
                     legend_elements.append((line[0], "Trustee Mean"))
 
-            # Plot delegate overall mean (thick, dark red, dotted)
+            # Plot delegate overall mean (thick, dark red, dashed)
             if 'delegate_overall_mean' in df.columns:
                 line = ax.plot(alphas, df['delegate_overall_mean'],
                              color=delegate_color_dark, linewidth=3, alpha=1.0,
-                             linestyle=':', zorder=3)
+                             linestyle=(0, (5, 5)), zorder=3)  # Custom dash pattern
                 if not legend_created:
                     legend_elements.append((line[0], "Delegate Mean"))
 
             # Format subplot
             ax.grid(True, alpha=0.3)
             ax.set_xlim(0, 1)
-            ax.set_ylim(0, 1)
+            ax.set_ylim(0.4, 1)
 
             # Hide top and right spines
             ax.spines['top'].set_visible(False)
@@ -131,7 +126,7 @@ def create_facet_agreement_plot(
 
             # Set titles for top row
             if row == 0:
-                ax.set_title(model_display, fontsize=14, fontweight='bold')
+                ax.set_title(model_display, fontsize=14)
 
             # Set y-axis labels for leftmost column
             if col == 0:
@@ -173,7 +168,7 @@ def create_facet_agreement_plot(
 
     # Set overall title
     fig.suptitle("Agreement with Model Defaults and Expert Consensus",
-                fontsize=16, fontweight='bold', y=0.95)
+                fontsize=16, y=0.95)
 
     # Adjust layout
     plt.tight_layout()
