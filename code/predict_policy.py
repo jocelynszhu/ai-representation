@@ -44,7 +44,7 @@ def load_data(prompt_type='trustee_ls', policy_file='../self_selected_policies_n
 
     return prompts, written_profiles, policies
 
-def run_claude(prompt, profile, policy):
+def run_claude(prompt, profile, policy, model="claude-3-7-sonnet-20250219"):
     """Execute Claude API call."""
     client = anthropic.Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
 
@@ -58,7 +58,7 @@ def run_claude(prompt, profile, policy):
     system = prompt.format(bio=profile)
 
     response = client.messages.create(
-        model="claude-3-7-sonnet-20250219",
+        model=model,
         max_tokens=1024,
         messages=messages,
         system=system,
@@ -67,7 +67,7 @@ def run_claude(prompt, profile, policy):
 
     return response.content[0].text
 
-def run_gpt(prompt, profile, policy):
+def run_gpt(prompt, profile, policy, model="gpt-4o"):
     """Execute GPT API call with full prompt in both system and user messages."""
     client = OpenAI(api_key=os.environ["OPENAI_API_KEY"])
 
@@ -86,12 +86,13 @@ def run_gpt(prompt, profile, policy):
     ]
 
     response = client.chat.completions.create(
-        model="gpt-4o",
+        model=model,
         messages=messages,
         temperature=0.0
     )
 
     return response.choices[0].message.content
+
 
 def run_grok(prompt, profile, policy):
     """Execute Grok API call through OpenRouter."""
@@ -125,9 +126,13 @@ def run_grok(prompt, profile, policy):
 def get_llm_response(prompt, profile, policy, model_name):
     """Route to appropriate LLM while using same prompts."""
     if model_name == "gpt-4o":
-        return run_gpt(prompt, profile, policy)
-    elif model_name.startswith("claude"):
-        return run_claude(prompt, profile, policy)
+        return run_gpt(prompt, profile, policy, model_name)
+    elif model_name == "gpt-4o-mini":
+        return run_gpt(prompt, profile, policy, model_name)    
+    elif model_name == "claude-3-sonnet-v2":
+        return run_claude(prompt, profile, policy, "claude-3-7-sonnet-20250219")
+    elif model_name == "claude-3-haiku-v2-mini":
+        return run_claude(prompt, profile, policy, "claude-3-5-haiku-20241022")
     elif model_name == "grok-4":
         return run_grok(prompt, profile, policy)
     else:
