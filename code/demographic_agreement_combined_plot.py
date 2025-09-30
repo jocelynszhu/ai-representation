@@ -2,8 +2,8 @@
 """
 Create combined demographic agreement visualization with 4 models.
 
-Top row: Agreement with expert consensus (delegate/trustee agreement with expert)
-Bottom row: Delegate-trustee agreement (internal agreement)
+Top row: Agreement with model defaults (delegate/trustee agreement with model default)
+Bottom row: Agreement with expert consensus (delegate/trustee agreement with expert)
 
 Both rows show Political Affiliation (left) and Race (right) demographics.
 """
@@ -586,8 +586,8 @@ def create_combined_demographic_plot(
     """
     Create combined 2x2 plot showing agreement by demographics across models.
 
-    Top row: Agreement with expert consensus (delegate/trustee) for expert policies
-    Bottom row: Agreement with model defaults (delegate/trustee) for no-consensus policies
+    Top row: Agreement with model defaults (delegate/trustee) for no-consensus policies
+    Bottom row: Agreement with expert consensus (delegate/trustee) for expert policies
     Columns: One for each demographic (Political Affiliation, Race)
 
     Args:
@@ -635,28 +635,7 @@ def create_combined_demographic_plot(
         print(f"Processing demographic: {demographic}")
         print(f"{'='*70}")
 
-        # Top row: Expert agreement
-        print("\n--- Collecting expert agreement data ---")
-        expert_data = collect_expert_agreement_data(
-            policy_indices=expert_consensus_policies,
-            prompt_nums=prompt_nums,
-            models=MODELS,
-            trustee_type=trustee_type,
-            bio_df=bio_df,
-            demographic=demographic,
-            alphas=alphas
-        )
-
-        plot_expert_agreement_panel(
-            axes[0, col_idx],
-            expert_data,
-            demographic,
-            demographic,  # Just the demographic name, no "Agreement with Expert Consensus"
-            show_ylabel=(col_idx == 0),  # Only show ylabel on leftmost chart
-            show_xticklabels=False  # Hide x-tick labels on top row
-        )
-
-        # Bottom row: Agreement with model default
+        # Top row: Agreement with model default
         print("\n--- Collecting default agreement data ---")
         default_data = collect_default_agreement_data(
             policy_indices=no_consensus_policies,
@@ -669,13 +648,36 @@ def create_combined_demographic_plot(
         )
 
         plot_expert_agreement_panel(
-            axes[1, col_idx],
+            axes[0, col_idx],
             default_data,
+            demographic,
+            demographic,  # Just the demographic name
+            show_ylabel=(col_idx == 0),  # Only show ylabel on leftmost chart
+            ylabel="Agreement Rate with Model Default",
+            ylim=(0.0, 1.02),  # Start at 0%
+            show_xticklabels=False  # Hide x-tick labels on top row
+        )
+
+        # Bottom row: Expert agreement
+        print("\n--- Collecting expert agreement data ---")
+        expert_data = collect_expert_agreement_data(
+            policy_indices=expert_consensus_policies,
+            prompt_nums=prompt_nums,
+            models=MODELS,
+            trustee_type=trustee_type,
+            bio_df=bio_df,
+            demographic=demographic,
+            alphas=alphas
+        )
+
+        plot_expert_agreement_panel(
+            axes[1, col_idx],
+            expert_data,
             demographic,
             None,  # No title for bottom row
             show_ylabel=(col_idx == 0),  # Only show ylabel on leftmost chart
-            ylabel="Agreement Rate with Model Default",
-            ylim=(0.0, 1.02),  # Start at 0% for bottom chart
+            ylabel="Agreement Rate with Expert",
+            ylim=(0.4, 1.02),  # Start at 40% for expert agreement
             show_xticklabels=True  # Show x-tick labels on bottom row
         )
 
@@ -686,7 +688,7 @@ def create_combined_demographic_plot(
     bar_type_labels = [l for l in bar_labels if l in ["Delegate", "Trustee (Long-term)"]]
     if bar_type_handles:
         legend1 = fig.legend(bar_type_handles, bar_type_labels,
-                  loc="lower left", bbox_to_anchor=(0.27, 0.04),
+                  loc="lower left", bbox_to_anchor=(0.21, 0.03),
                   fontsize=10, frameon=True, title="Condition",
                   ncol=2, borderaxespad=0, handlelength=2, handleheight=1.5)
 
@@ -695,19 +697,19 @@ def create_combined_demographic_plot(
     model_labels = [l for l in bar_labels if l not in ["Delegate", "Trustee (Long-term)"]]
     if model_handles:
         legend2 = fig.legend(model_handles, model_labels,
-                  loc="lower left", bbox_to_anchor=(0.45, 0.04),
+                  loc="lower left", bbox_to_anchor=(0.45, 0.03),
                   fontsize=10, frameon=True, title="Model",
                   ncol=4, borderaxespad=0, handlelength=2, handleheight=1.5)
 
-    # Add expert topics text (centered on top row, further right)
-    expert_topics_text = "\n".join(expert_topics)
-    fig.text(0.93, 0.72, expert_topics_text,
+    # Add no consensus topics text (centered on top row, further right)
+    no_consensus_topics_text = "\n".join(no_consensus_topics)
+    fig.text(0.93, 0.72, no_consensus_topics_text,
             fontsize=8, va='center', ha='center',
             bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.3, pad=0.5))
 
-    # Add no consensus topics text (centered on bottom row, further right)
-    no_consensus_topics_text = "\n".join(no_consensus_topics)
-    fig.text(0.93, 0.28, no_consensus_topics_text,
+    # Add expert topics text (centered on bottom row, further right)
+    expert_topics_text = "\n".join(expert_topics)
+    fig.text(0.93, 0.28, expert_topics_text,
             fontsize=8, va='center', ha='center',
             bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.3, pad=0.5))
 
