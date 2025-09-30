@@ -26,7 +26,7 @@ Make sure the reason comes first, then the vote. The structure should be:
 
 # %%
 #model = "claude-3-sonnet-v2"
-model = "gpt-4o"
+model = "claude-3-haiku-v2-mini"
 #model = "grok"
 for i in range(len(policies)):
     policy = policies.iloc[i].statement

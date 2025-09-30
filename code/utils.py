@@ -4,7 +4,7 @@ import anthropic
 import os
 import json
 def get_llm_response(api_key, task, prompt, model="gpt-4o", **kwargs):
-    if model[0:3] == "gpt":
+    if model.startswith("gpt"):
         try:
             client = OpenAI(api_key=api_key)
             messages = [
@@ -27,8 +27,28 @@ def get_llm_response(api_key, task, prompt, model="gpt-4o", **kwargs):
         except Exception as e:
             print(e)
             return None
-
-    elif model[:5] =="llama":
+    elif model == "claude-3-haiku-v2-mini":
+        try:
+            client = anthropic.Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
+            messages = [
+                {
+                    "role": "user",
+                    "content": f"{prompt}"
+                }
+            ]
+            response = client.messages.create(
+                model="claude-3-5-haiku-20241022",
+                        max_tokens=1024,
+                        messages=messages,
+                        system = task,
+                        temperature=0.0
+                    )
+           # text = json.loads(response.content[0].text)
+            return process_claude_response(response.content[0].text)
+        except Exception as e:
+            print(e)
+            return None
+    elif model == "llama-3.2":
         try:
             client = ollama.Client(host="localhost")
             response = ollama.chat(

@@ -2,12 +2,14 @@
 # Simple Parallel Policy Prediction Runner
 
 # Default configuration
-MODEL="claude-3-sonnet-v2"
-PROMPT_TYPE="trustee_ls"
-PROMPT_NUM=2  # Default value
+#MODEL="claude-3-haiku-v2-mini"
+MODEL="gpt-4o-mini"
+PROMPT_TYPE="trustee_lsd"
+PROMPT_NUM=0  # Default value
 N_USERS=""  # Leave empty for all users, or set to a number
 MAX_PARALLEL=8  # Maximum number of parallel processes
-
+#POLICIES=(15 16 17 18 19 20 21 22 23 24 25 26 27 28 29)
+POLICIES=(0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29)
 # Parse command line arguments
 while [[ $# -gt 0 ]]; do
     case $1 in
@@ -40,7 +42,6 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 # Policies to run (modify this list as needed)
-POLICIES=(0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29)
 #POLICIES=(0)
 # Create logs directory
 LOG_DIR="logs"

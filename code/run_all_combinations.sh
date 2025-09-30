@@ -6,10 +6,10 @@
 # - trustee_lsd (prompts 0-2) x models (gpt-4o, claude-3-sonnet-v2)
 
 # Configuration
-MODELS=("gpt-4o" "claude-3-sonnet-v2")
-DELEGATE_PROMPTS=(0 1 2 3 4)
-TRUSTEE_LS_PROMPTS=(0 1 2)
-TRUSTEE_LSD_PROMPTS=(0 1 2)
+MODELS=("claude-3-haiku-v2-mini" "gpt-4o-mini")
+DELEGATE_PROMPTS=(3 4)
+TRUSTEE_LS_PROMPTS=()
+TRUSTEE_LSD_PROMPTS=()
 
 # Options
 DRY_RUN=false
