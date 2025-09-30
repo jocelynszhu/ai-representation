@@ -166,25 +166,25 @@ def create_facet_agreement_plot(
 
             # Set titles for top row
             if row == 0:
-                ax.set_title(group["title"], fontsize=14)
+                ax.set_title(group["title"], fontsize=11)
 
             # Set y-axis labels for leftmost column
             if col == 0:
-                ax.set_ylabel(config["ylabel"], fontsize=12)
+                ax.set_ylabel(config["ylabel"], fontsize=10)
 
             # Set x-axis labels for bottom row
             if row == 1:
-                ax.set_xlabel("Long Term Weight", fontsize=12)
+                ax.set_xlabel("Long Term Weight", fontsize=10)
 
     # Create Condition legend (bottom left)
     condition_handles = [
-        Line2D([0], [0], color='grey', linewidth=3, linestyle='-'),
+        Line2D([0], [0], color='darkgrey', linewidth=3, linestyle='--'),
         Line2D([0], [0], color='darkgrey', linewidth=3, linestyle=(0, (5, 5)))
     ]
-    condition_labels = ["Trustee (Long-term)", "Delegate"]
+    condition_labels = ["Trustee", "Delegate"]
 
     legend1 = fig.legend(condition_handles, condition_labels,
-                        loc="lower left", bbox_to_anchor=(0.21, 0.03),
+                        loc="lower left", bbox_to_anchor=(0.21, 0.01),
                         fontsize=10, frameon=True, title="Condition",
                         ncol=2, borderaxespad=0, handlelength=2, handleheight=1.5)
 
@@ -192,7 +192,7 @@ def create_facet_agreement_plot(
     if legend_elements:
         model_handles, model_labels = zip(*legend_elements)
         legend2 = fig.legend(model_handles, model_labels,
-                           loc="lower left", bbox_to_anchor=(0.45, 0.03),
+                           loc="lower left", bbox_to_anchor=(0.45, 0.01),
                            fontsize=10, frameon=True, title="Model",
                            ncol=4, borderaxespad=0, handlelength=2, handleheight=1.5)
 
@@ -230,11 +230,11 @@ def create_facet_agreement_plot(
 
     # Set overall title
     fig.suptitle("Agreement with Model Defaults and Expert Consensus",
-                fontsize=16, y=0.95)
+                fontsize=13, y=0.95)
 
     # Adjust layout
     plt.tight_layout()
-    plt.subplots_adjust(top=0.90, right=0.87, bottom=0.10)
+    plt.subplots_adjust(top=0.90, right=0.87, bottom=0.13)
 
     # Save if path provided
     if save_path:
