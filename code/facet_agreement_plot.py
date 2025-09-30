@@ -50,9 +50,9 @@ def create_facet_agreement_plot(
     # Define subplot configurations
     configs = [
         # Top row: Agreement with Model Defaults
-        {"row": 0, "consensus_filter": "No", "compare_expert": False, "ylabel": "Agreement Rate with Model Default"},
+        {"row": 0, "consensus_filter": "No", "compare_expert": False, "ylabel": "Agreement w/ Model Default"},
         # Bottom row: Agreement with Expert Consensus
-        {"row": 1, "consensus_filter": "Yes", "compare_expert": True, "ylabel": "Agreement Rate with Expert Consensus"}
+        {"row": 1, "consensus_filter": "Yes", "compare_expert": True, "ylabel": "Agreement w/ Expert Consensus"}
     ]
 
     # Colors and styles
@@ -170,11 +170,11 @@ def create_facet_agreement_plot(
 
             # Set y-axis labels for leftmost column
             if col == 0:
-                ax.set_ylabel(config["ylabel"], fontsize=12)
+                ax.set_ylabel(config["ylabel"], fontsize=10)
 
             # Set x-axis labels for bottom row
             if row == 1:
-                ax.set_xlabel("Long Term Weight", fontsize=12)
+                ax.set_xlabel("Long Term Weight", fontsize=10)
 
     # Create Condition legend (bottom left)
     condition_handles = [
@@ -224,7 +224,7 @@ def create_facet_agreement_plot(
         "Limiting Carbon Emissions"
     ]
     expert_text = "\n".join(expert_topics)
-    fig.text(1.02, 0.28, expert_text,
+    fig.text(1.02, 0.33, expert_text,
             fontsize=12, va='center', ha='center',
             bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.3, pad=0.5))
 
