@@ -13,10 +13,9 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 from typing import List, Dict, Tuple
-from agreement_demographics import (
-    create_agreement_dataframe,
-    create_delegate_trustee_agreement_dataframe
-)
+from agreement_demographics import create_agreement_dataframe
+from vote_data_loader import _load_delegate_data, _load_trustee_data
+from compare_delegates_trustees import calculate_weighted_vote, calculate_discounted_vote
 
 # Model configuration
 MODELS = [
@@ -119,23 +118,25 @@ def collect_expert_agreement_data(
     return results_df
 
 
-def collect_delegate_trustee_agreement_data(
+def collect_delegate_trustee_proportion_agreement_data(
     policy_indices: List[int],
-    prompt_nums: List[int],
+    delegate_prompt_nums: List[int],
+    trustee_prompt_nums: List[int],
     models: List[str],
     trustee_type: str,
     bio_df: pd.DataFrame,
     demographic: str,
-    alphas: List[float]
+    alpha: float
 ) -> pd.DataFrame:
     """
-    Collect delegate-trustee internal agreement rates
-    across all models and demographic groups.
+    Collect delegate-trustee agreement based on proportion differences.
+
+    Agreement = 1 - |delegate_yes_prop - trustee_yes_prop|
 
     Returns DataFrame with columns:
     - demographic_group: The demographic category
     - model: Model name
-    - agreement_rate: Delegate-trustee agreement rate
+    - agreement_rate: Agreement based on yes proportion difference
     """
     all_results = []
 
@@ -144,32 +145,103 @@ def collect_delegate_trustee_agreement_data(
 
         for policy_idx in policy_indices:
             try:
-                df = create_delegate_trustee_agreement_dataframe(
-                    policy_index=policy_idx,
-                    prompt_nums=prompt_nums,
-                    model=model,
-                    trustee_type=trustee_type,
-                    bio_df=bio_df,
-                    demographic=demographic,
-                    alphas=alphas
-                )
+                # Collect all delegate and trustee votes for this policy
+                all_delegate_votes = []
+                all_trustee_votes = []
 
-                # Extract agreement rates by group
-                for col in df.columns:
-                    if col.startswith("agreement_"):
-                        group = col.replace("agreement_", "")
-                        # Average across alphas
-                        val = df[col].mean()
+                # Load delegate data from all prompts
+                for prompt_num in delegate_prompt_nums:
+                    delegate_file = f"../data/delegate/{model}/self_selected_policies_new/prompt-{prompt_num}/d_policy_{policy_idx + 1}_votes.jsonl"
+                    try:
+                        delegate_df = _load_delegate_data(delegate_file)
+                        if len(delegate_df) > 0 and 'participant_id' in delegate_df.columns:
+                            # Merge with bio data
+                            delegate_df = delegate_df.merge(bio_df, left_on='participant_id', right_on='participant_id', how='left')
+                            all_delegate_votes.append(delegate_df)
+                    except FileNotFoundError:
+                        print(f"    Delegate file not found: prompt {prompt_num}")
+                        continue
+                    except Exception as e:
+                        print(f"    Error loading delegate data from prompt {prompt_num}: {e}")
+                        continue
+
+                # Load trustee data from all prompts and calculate votes
+                for prompt_num in trustee_prompt_nums:
+                    trustee_file = f"../data/{trustee_type}/{model}/self_selected_policies_new/prompt-{prompt_num}/t_policy_{policy_idx + 1}_votes.jsonl"
+                    try:
+                        trustee_df = _load_trustee_data(trustee_file, trustee_type)
+
+                        if len(trustee_df) == 0:
+                            continue
+
+                        # Calculate trustee votes using alpha
+                        trustee_votes_list = []
+                        for _, row in trustee_df.iterrows():
+                            try:
+                                if trustee_type == "trustee_ls":
+                                    entry = {
+                                        "yes_vote": {"short_util": row['yes_short_util'], "long_util": row['yes_long_util']},
+                                        "no_vote": {"short_util": row['no_short_util'], "long_util": row['no_long_util']}
+                                    }
+                                    vote_result = calculate_weighted_vote(entry, alpha)
+                                elif trustee_type == "trustee_lsd":
+                                    entry = {"yes": {}, "no": {}}
+                                    for period in ["0-5 years", "5-10 years", "10-15 years", "15-20 years", "20-25 years", "25-30 years"]:
+                                        period_key = period.replace("-", "_").replace(" ", "_")
+                                        entry["yes"][period] = {"score": row[f'yes_{period_key}_score']}
+                                        entry["no"][period] = {"score": row[f'no_{period_key}_score']}
+                                    vote_result = calculate_discounted_vote(entry, alpha)
+
+                                trustee_votes_list.append({
+                                    'participant_id': row['participant_id'],
+                                    'vote': vote_result['vote']
+                                })
+                            except Exception as e:
+                                continue
+
+                        if trustee_votes_list:
+                            trustee_vote_df = pd.DataFrame(trustee_votes_list)
+                            trustee_vote_df = trustee_vote_df.merge(bio_df, on='participant_id', how='left')
+                            all_trustee_votes.append(trustee_vote_df)
+
+                    except FileNotFoundError:
+                        print(f"    Trustee file not found: prompt {prompt_num}")
+                        continue
+                    except Exception as e:
+                        print(f"    Error loading trustee data from prompt {prompt_num}: {e}")
+                        continue
+
+                if not all_delegate_votes or not all_trustee_votes:
+                    continue
+
+                # Combine all votes
+                delegate_combined = pd.concat(all_delegate_votes, ignore_index=True)
+                trustee_combined = pd.concat(all_trustee_votes, ignore_index=True)
+               # print(delegate_combined)
+               # print(trustee_combined)
+                #raise Exception("Stop here")
+                # Calculate agreement by demographic group
+                for group in delegate_combined[demographic].dropna().unique():
+                    delegate_group = delegate_combined[delegate_combined[demographic] == group]
+                    trustee_group = trustee_combined[trustee_combined[demographic] == group]
+
+                    if len(delegate_group) > 0 and len(trustee_group) > 0:
+                        delegate_yes_prop = ((delegate_group['vote'] == 'Yes') | (delegate_group['vote'] == 'yes')).mean()
+                        trustee_yes_prop = ((trustee_group['vote'] == 'Yes') | (trustee_group['vote'] == 'yes')).mean()
+
+                        agreement = 1 - abs(delegate_yes_prop - trustee_yes_prop)
 
                         all_results.append({
                             "demographic_group": group,
                             "model": model,
-                            "agreement_rate": val,
+                            "agreement_rate": agreement,
                             "policy_idx": policy_idx
                         })
 
             except Exception as e:
                 print(f"  Error with policy {policy_idx + 1}: {e}")
+                import traceback
+                traceback.print_exc()
                 continue
 
     results_df = pd.DataFrame(all_results)
@@ -384,10 +456,13 @@ def create_combined_demographic_plot(
     expert_consensus_policies: List[int],
     no_consensus_policies: List[int],
     prompt_nums: List[int],
+    delegate_prompt_nums: List[int],
+    trustee_prompt_nums: List[int],
     trustee_type: str,
     bio_df: pd.DataFrame,
     demographics: List[str],
     alphas: List[float],
+    alpha: float,
     figsize: Tuple[int, int] = (16, 12),
     output_file: str = None
 ):
@@ -395,8 +470,22 @@ def create_combined_demographic_plot(
     Create combined 2x2 plot showing agreement by demographics across models.
 
     Top row: Agreement with expert consensus (delegate/trustee)
-    Bottom row: Delegate-trustee internal agreement
+    Bottom row: Delegate-trustee agreement based on proportion differences (1 - |delegate_yes_prop - trustee_yes_prop|)
     Columns: One for each demographic (Political Affiliation, Race)
+
+    Args:
+        expert_consensus_policies: Policy indices with expert votes
+        no_consensus_policies: Policy indices without expert votes
+        prompt_nums: Prompt numbers for expert agreement (top row)
+        delegate_prompt_nums: Delegate prompt numbers for bottom row
+        trustee_prompt_nums: Trustee prompt numbers for bottom row
+        trustee_type: "trustee_ls" or "trustee_lsd"
+        bio_df: Biography dataframe with demographic info
+        demographics: List of demographic columns to plot
+        alphas: Alpha values for expert agreement calculation (top row)
+        alpha: Single alpha value for bottom row trustee calculation
+        figsize: Figure size
+        output_file: Optional output file path
     """
     print("=" * 70)
     print("Creating Combined Demographic Agreement Visualization")
@@ -429,16 +518,17 @@ def create_combined_demographic_plot(
             demographic  # Just the demographic name, no "Agreement with Expert Consensus"
         )
 
-        # Bottom row: Delegate-trustee agreement
+        # Bottom row: Delegate-trustee agreement (proportion-based)
         print("\n--- Collecting delegate-trustee agreement data ---")
-        dt_data = collect_delegate_trustee_agreement_data(
+        dt_data = collect_delegate_trustee_proportion_agreement_data(
             policy_indices=no_consensus_policies,
-            prompt_nums=prompt_nums,
+            delegate_prompt_nums=delegate_prompt_nums,
+            trustee_prompt_nums=trustee_prompt_nums,
             models=MODELS,
             trustee_type=trustee_type,
             bio_df=bio_df,
             demographic=demographic,
-            alphas=alphas
+            alpha=alpha
         )
 
         plot_delegate_trustee_agreement_panel(
@@ -490,13 +580,25 @@ if __name__ == "__main__":
 
     # Configuration
     trustee_type = "trustee_ls"
-    prompt_nums = [0, 1, 2]
-    alphas = [1.0]  # Use alpha=1.0 for trustee calculations
+    prompt_nums = [0, 1, 2]  # For expert agreement (top row)
+    delegate_prompt_nums = [0, 1, 2, 3, 4]  # For bottom row
+    trustee_prompt_nums = [0, 1, 2]  # For bottom row
+    alphas = [1.0]  # Use alpha=1.0 for expert agreement (top row)
+    alpha = 1.0  # Use alpha=1.0 for trustee calculations (bottom row)
 
     # Split policies by expert consensus availability
     # TODO: Programmatically determine which policies have expert consensus
-    expert_consensus_policies = list(range(20, 30))  # Policies with expert votes
-    no_consensus_policies = list(range(0, 20))       # Policies without expert votes
+    self_selected_policies = pd.read_json("../self_selected_policies_new.jsonl", lines=True)
+    print(self_selected_policies.head())
+    expert_consensus_policies = self_selected_policies[self_selected_policies['consensus'] == 'Yes']['id'].tolist()
+    expert_consensus_policies = [policy - 1 for policy in expert_consensus_policies]
+    no_consensus_policies = self_selected_policies[self_selected_policies['consensus'] == 'No']['id'].tolist()
+    no_consensus_policies = [policy - 1 for policy in no_consensus_policies]
+    print(f"Expert consensus policies: {len(expert_consensus_policies)}")
+    print(f"No consensus policies: {len(no_consensus_policies)}")
+    #raise Exception("Stop here")
+    #expert_consensus_policies = list(range(20, 30))  # Policies with expert votes
+    #no_consensus_policies = list(range(0, 20))       # Policies without expert votes
 
     demographics = ["Political Affiliation", "Race"]
 
@@ -504,9 +606,12 @@ if __name__ == "__main__":
         expert_consensus_policies=expert_consensus_policies,
         no_consensus_policies=no_consensus_policies,
         prompt_nums=prompt_nums,
+        delegate_prompt_nums=delegate_prompt_nums,
+        trustee_prompt_nums=trustee_prompt_nums,
         trustee_type=trustee_type,
         bio_df=bio_df,
         demographics=demographics,
         alphas=alphas,
+        alpha=alpha,
         output_file="agreement_visuals/combined_demographic_agreement.png"
     )
