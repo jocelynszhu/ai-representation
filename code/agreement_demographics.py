@@ -509,31 +509,31 @@ def save_delegate_trustee_agreement_plots_to_pdf(
 
     print(f"All delegate–trustee agreement plots saved to {output_file}")
 
-# %%
-model = "claude-3-sonnet-v2"
-trustee_type = "trustee_ls"
-demographic = "Political Affiliation"
-# alphas = np.arange(0.0, 1.01, 0.1)
-alphas = [1]
-save_all_policy_plots_to_pdf(
-    policy_indices=range(20,30),          # all 30 policies
-    prompt_nums=[0, 1, 2],             # whichever prompts you use
-    model=model,
-    trustee_type=trustee_type,
-    bio_df=bio_df,
-    demographic=demographic,
-    alphas=alphas,
-    compare_expert=True,
-    output_file=f"agreement visuals/{model}/{trustee_type}/{demographic}_expert_agreement_alpha_1.pdf"
-)
+# # %%
+# model = "claude-3-sonnet-v2"
+# trustee_type = "trustee_ls"
+# demographic = "Political Affiliation"
+# # alphas = np.arange(0.0, 1.01, 0.1)
+# alphas = [1]
+# save_all_policy_plots_to_pdf(
+#     policy_indices=range(20,30),          # all 30 policies
+#     prompt_nums=[0, 1, 2],             # whichever prompts you use
+#     model=model,
+#     trustee_type=trustee_type,
+#     bio_df=bio_df,
+#     demographic=demographic,
+#     alphas=alphas,
+#     compare_expert=True,
+#     output_file=f"agreement visuals/{model}/{trustee_type}/{demographic}_expert_agreement_alpha_1.pdf"
+# )
 
-save_delegate_trustee_agreement_plots_to_pdf(
-    policy_indices=range(20),           # loop through first 20 policies
-    prompt_nums=[0, 1, 2],              # whichever prompts you want
-    model=model,
-    trustee_type=trustee_type,
-    bio_df=bio_df,
-    demographic=demographic,
-    alphas=alphas,
-    output_file=f"agreement visuals/{model}/{trustee_type}/{demographic}_delegate_trustee_agreement_alpha_1.pdf"
-)
+# save_delegate_trustee_agreement_plots_to_pdf(
+#     policy_indices=range(20),           # loop through first 20 policies
+#     prompt_nums=[0, 1, 2],              # whichever prompts you want
+#     model=model,
+#     trustee_type=trustee_type,
+#     bio_df=bio_df,
+#     demographic=demographic,
+#     alphas=alphas,
+#     output_file=f"agreement visuals/{model}/{trustee_type}/{demographic}_delegate_trustee_agreement_alpha_1.pdf"
+# )
