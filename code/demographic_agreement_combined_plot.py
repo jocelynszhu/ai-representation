@@ -736,7 +736,7 @@ def create_combined_demographic_plot(
         plt.savefig(output_file, dpi=300, bbox_inches="tight")
         print(f"\nSaved to: {output_file}")
 
-    plt.show()
+    # plt.show()  # Commented out - plot is saved instead
 
     return fig
 
@@ -806,5 +806,5 @@ if __name__ == "__main__":
         alpha=alpha,
         expert_topics=expert_topics,
         no_consensus_topics=no_consensus_topics,
-        output_file="agreement_visuals/combined_demographic_agreement.png"
+        output_file="../data/plots/combined_demographic_agreement.png"
     )

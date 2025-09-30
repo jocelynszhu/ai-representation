@@ -9,7 +9,7 @@ def create_facet_agreement_plot(
     policy_indices: List[int],
     delegate_prompt_nums: List[int],
     trustee_prompt_nums: List[int],
-    figsize: Tuple[int, int] = (16, 12),
+    figsize: Tuple[int, int] = (22, 12),
     save_path: Optional[str] = None
 ) -> plt.Figure:
     """
@@ -19,7 +19,7 @@ def create_facet_agreement_plot(
         policy_indices (List[int]): List of 0-based policy indices to analyze
         delegate_prompt_nums (List[int]): List of delegate prompt numbers
         trustee_prompt_nums (List[int]): List of trustee prompt numbers
-        figsize (Tuple[int, int]): Overall figure size (default: (16, 12))
+        figsize (Tuple[int, int]): Overall figure size (default: (22, 12))
         save_path (Optional[str]): Path to save the plot
 
     Returns:
@@ -166,15 +166,15 @@ def create_facet_agreement_plot(
 
             # Set titles for top row
             if row == 0:
-                ax.set_title(group["title"], fontsize=11)
+                ax.set_title(group["title"], fontsize=12)
 
             # Set y-axis labels for leftmost column
             if col == 0:
-                ax.set_ylabel(config["ylabel"], fontsize=10)
+                ax.set_ylabel(config["ylabel"], fontsize=12)
 
             # Set x-axis labels for bottom row
             if row == 1:
-                ax.set_xlabel("Long Term Weight", fontsize=10)
+                ax.set_xlabel("Long Term Weight", fontsize=12)
 
     # Create Condition legend (bottom left)
     condition_handles = [
@@ -184,16 +184,16 @@ def create_facet_agreement_plot(
     condition_labels = ["Trustee", "Delegate"]
 
     legend1 = fig.legend(condition_handles, condition_labels,
-                        loc="lower left", bbox_to_anchor=(0.21, 0.01),
-                        fontsize=10, frameon=True, title="Condition",
+                        loc="lower left", bbox_to_anchor=(0.05, 0.005),
+                        fontsize=12, frameon=True, title="Condition",
                         ncol=2, borderaxespad=0, handlelength=2, handleheight=1.5)
 
     # Create Model legend (bottom center-right)
     if legend_elements:
         model_handles, model_labels = zip(*legend_elements)
         legend2 = fig.legend(model_handles, model_labels,
-                           loc="lower left", bbox_to_anchor=(0.45, 0.01),
-                           fontsize=10, frameon=True, title="Model",
+                           loc="lower left", bbox_to_anchor=(0.35, 0.005),
+                           fontsize=12, frameon=True, title="Model",
                            ncol=4, borderaxespad=0, handlelength=2, handleheight=1.5)
 
     # Add topic text boxes
@@ -211,8 +211,8 @@ def create_facet_agreement_plot(
         "Housing for the Homeless"
     ]
     no_consensus_text = "\n".join(no_consensus_topics)
-    fig.text(0.93, 0.72, no_consensus_text,
-            fontsize=8, va='center', ha='center',
+    fig.text(1.02, 0.72, no_consensus_text,
+            fontsize=12, va='center', ha='center',
             bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.3, pad=0.5))
 
     # Bottom row: Expert consensus topics
@@ -224,21 +224,21 @@ def create_facet_agreement_plot(
         "Limiting Carbon Emissions"
     ]
     expert_text = "\n".join(expert_topics)
-    fig.text(0.93, 0.28, expert_text,
-            fontsize=8, va='center', ha='center',
+    fig.text(1.02, 0.28, expert_text,
+            fontsize=12, va='center', ha='center',
             bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.3, pad=0.5))
 
     # Set overall title
     fig.suptitle("Agreement with Model Defaults and Expert Consensus",
-                fontsize=13, y=0.95)
+                fontsize=16, y=1.00)
 
     # Adjust layout
     plt.tight_layout()
-    plt.subplots_adjust(top=0.90, right=0.87, bottom=0.13)
+    plt.subplots_adjust(top=0.92, right=0.90, bottom=0.14, left=0.06)
 
     # Save if path provided
     if save_path:
-        plt.savefig(save_path, dpi=300, bbox_inches='tight')
+        plt.savefig(save_path, dpi=500, bbox_inches='tight')
 
     return fig
 
@@ -250,7 +250,8 @@ if __name__ == "__main__":
         policy_indices=list(range(30)),
         delegate_prompt_nums=[0, 1, 2, 3, 4],
         trustee_prompt_nums=[0, 1, 2],
-        figsize=(16, 12)
+        figsize=(12, 8),
+        save_path="../data/plots/facet_agreement_plot.png"
     )
-    plt.show()
+    # plt.show()  # Commented out - plot is saved instead
 # %%
