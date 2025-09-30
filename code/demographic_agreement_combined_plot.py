@@ -445,7 +445,7 @@ def plot_expert_agreement_panel(
                         x_positions[bar_idx],
                         val,
                         color=MODEL_COLORS[model],
-                        s=80,  # Slightly smaller
+                        s=60,  # Slightly smaller
                         label=label,
                         zorder=3,
                         alpha=0.6  # Lighter markers
@@ -610,14 +610,14 @@ def create_combined_demographic_plot(
     if expert_topics is None:
         expert_topics = [
             "Childhood Vaccination",
-            "Limiting Carbon Emissions",
+            "Limit Carbon Emissions",
             "Free Trade",
             "GMOs Safe"
         ]
 
     if no_consensus_topics is None:
         no_consensus_topics = [
-            "Minimum wage",
+            "Minimum Wage",
             "Sex Education",
             "Universal Healthcare",
             "Abortion"
@@ -775,11 +775,11 @@ if __name__ == "__main__":
         "Childhood Vaccination",
         "Free Trade",
         "Water Fluoridation",
-        "Limiting Carbon Emissions",
+        "Limit Carbon Emissions",
     ]
 
     no_consensus_topics = [
-        "Minimum wage",
+        "Minimum Wage",
         "Abortion",
         "Race/Gender in Hiring",
         "Universal Healthcare",
