@@ -259,7 +259,8 @@ def plot_expert_agreement_panel(
     ax,
     data: pd.DataFrame,
     demographic: str,
-    title: str
+    title: str,
+    show_ylabel: bool = True
 ):
     """
     Plot top row panel: delegate/trustee agreement with expert consensus.
@@ -284,24 +285,35 @@ def plot_expert_agreement_panel(
 
     # Calculate x positions
     x_positions = []
-    tick_positions = []
-    tick_labels = []
+    group_tick_positions = []  # One tick per demographic group
+    group_tick_labels = []
 
     current_x = 0
+    bar_positions_with_conditions = []  # Store (x_pos, condition) for text labels
+
     for i, group in enumerate(groups):
+        group_start_x = current_x
+
         for j, condition in enumerate(conditions):
             if j > 0:
                 current_x += small_gap  # Add small gap before Trustee
 
             x_positions.append(current_x)
-            tick_positions.append(current_x)
-            tick_labels.append(f"{group}\n{condition}")
+            bar_positions_with_conditions.append((current_x, condition))
             current_x += bar_width
+
+        # Add tick in middle of group
+        group_center = group_start_x + (bar_width * 2 + small_gap) / 2
+        group_tick_positions.append(group_center)
+        group_tick_labels.append(group)
 
         current_x += large_gap  # Add large gap after each demographic group
 
     # Plot bars (averaged across models)
     bar_idx = 0
+    delegate_bar_plotted = False
+    trustee_bar_plotted = False
+
     for i, group in enumerate(groups):
         for j, condition in enumerate(conditions):
             # Get values for all models
@@ -320,14 +332,28 @@ def plot_expert_agreement_panel(
             # Calculate mean across models
             mean_val = np.nanmean(model_vals) if model_vals else 0
 
-            # Plot bar with darker gray color for emphasis
+            # Use hatch for Trustee only, Delegate is solid
+            if condition == "Delegate":
+                bar_hatch = None  # No hatch for delegate (solid)
+                bar_label = "Delegate" if not delegate_bar_plotted else None
+                delegate_bar_plotted = True
+            else:  # Trustee
+                bar_hatch = "///"  # Forward slash hatch for trustee
+                bar_label = "Trustee" if not trustee_bar_plotted else None
+                trustee_bar_plotted = True
+
+            # Plot bar (gray color, with or without hatch)
             ax.bar(
                 x_positions[bar_idx],
                 mean_val,
                 width=bar_width,
                 color="gray",
-                alpha=0.8,  # Darker bars
-                zorder=1
+                alpha=0.6,
+                zorder=1,
+                label=bar_label,
+                hatch=bar_hatch,
+                edgecolor='black',
+                linewidth=0.5
             )
 
             # Overlay individual model markers (lighter)
@@ -351,13 +377,18 @@ def plot_expert_agreement_panel(
             bar_idx += 1
 
     # Formatting
-    ax.set_xticks(tick_positions)
-    ax.set_xticklabels(tick_labels, rotation=45, ha="right", fontsize=9)
-    ax.set_ylabel("Agreement Rate with Expert")
-    ax.set_ylim(0.4, 1.0)  # Start at 40%, end at 100%
+    ax.set_xticks(group_tick_positions)
+    ax.set_xticklabels(group_tick_labels, fontsize=8)
+    if show_ylabel:
+        ax.set_ylabel("Agreement Rate with Expert")
+    ax.set_ylim(0.4, 1.02)  # Start at 40%, end at 102%
     ax.set_title(title, fontsize=12)  # No bold
     ax.yaxis.set_major_formatter(plt.FuncFormatter(lambda y, _: f"{y:.0%}"))
     ax.grid(axis="y", alpha=0.3)
+
+    # Remove top and right spines
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
 
     # Add vertical lines to separate demographic groups
     separator_x = []
@@ -376,7 +407,8 @@ def plot_delegate_trustee_agreement_panel(
     ax,
     data: pd.DataFrame,
     demographic: str,
-    title: str
+    title: str,
+    show_ylabel: bool = True
 ):
     """
     Plot bottom row panel: delegate-trustee internal agreement.
@@ -444,12 +476,17 @@ def plot_delegate_trustee_agreement_panel(
 
     # Formatting
     ax.set_xticks(x_positions)
-    ax.set_xticklabels(groups, rotation=30, ha="right")
-    ax.set_ylabel("Delegate-Trustee Agreement Rate")
-    ax.set_ylim(0.4, 1.0)  # Start at 40%, end at 100%
+    ax.set_xticklabels(groups, fontsize=8)
+    if show_ylabel:
+        ax.set_ylabel("Delegate/Trustee Vote Similarity")
+    ax.set_ylim(0.4, 1.02)  # Start at 40%, end at 102%
     # No title for bottom row
     ax.yaxis.set_major_formatter(plt.FuncFormatter(lambda y, _: f"{y:.0%}"))
     ax.grid(axis="y", alpha=0.3)
+
+    # Remove top and right spines
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
 
 
 def create_combined_demographic_plot(
@@ -464,7 +501,9 @@ def create_combined_demographic_plot(
     alphas: List[float],
     alpha: float,
     figsize: Tuple[int, int] = (16, 12),
-    output_file: str = None
+    output_file: str = None,
+    expert_topics: List[str] = None,
+    no_consensus_topics: List[str] = None
 ):
     """
     Create combined 2x2 plot showing agreement by demographics across models.
@@ -486,7 +525,26 @@ def create_combined_demographic_plot(
         alpha: Single alpha value for bottom row trustee calculation
         figsize: Figure size
         output_file: Optional output file path
+        expert_topics: List of policy topics for expert consensus (top row)
+        no_consensus_topics: List of policy topics without expert consensus (bottom row)
     """
+    # Set default topic lists if not provided
+    if expert_topics is None:
+        expert_topics = [
+            "Childhood Vaccination",
+            "Limiting Carbon Emissions",
+            "Free Trade",
+            "GMOs Safe"
+        ]
+
+    if no_consensus_topics is None:
+        no_consensus_topics = [
+            "Minimum wage",
+            "Sex Education",
+            "Universal Healthcare",
+            "Abortion"
+        ]
+
     print("=" * 70)
     print("Creating Combined Demographic Agreement Visualization")
     print("=" * 70)
@@ -515,7 +573,8 @@ def create_combined_demographic_plot(
             axes[0, col_idx],
             expert_data,
             demographic,
-            demographic  # Just the demographic name, no "Agreement with Expert Consensus"
+            demographic,  # Just the demographic name, no "Agreement with Expert Consensus"
+            show_ylabel=(col_idx == 0)  # Only show ylabel on leftmost chart
         )
 
         # Bottom row: Delegate-trustee agreement (proportion-based)
@@ -535,13 +594,39 @@ def create_combined_demographic_plot(
             axes[1, col_idx],
             dt_data,
             demographic,
-            None  # No title for bottom row
+            None,  # No title for bottom row
+            show_ylabel=(col_idx == 0)  # Only show ylabel on leftmost chart
         )
 
-    # Add legend (bottom right, outside the plots)
-    handles, labels = axes[0, 0].get_legend_handles_labels()
-    fig.legend(handles, labels, loc="lower right", bbox_to_anchor=(0.98, 0.02),
-               fontsize=10, frameon=True)
+    # Add bar type legend (top right, outside the plots) - from top row
+    bar_handles, bar_labels = axes[0, 0].get_legend_handles_labels()
+    # Filter to get only Delegate/Trustee (first 2 items)
+    bar_type_handles = [h for h, l in zip(bar_handles, bar_labels) if l in ["Delegate", "Trustee"]]
+    bar_type_labels = [l for l in bar_labels if l in ["Delegate", "Trustee"]]
+    if bar_type_handles:
+        legend1 = fig.legend(bar_type_handles, bar_type_labels,
+                  loc="upper left", bbox_to_anchor=(0.88, 0.95),
+                  fontsize=10, frameon=True, title="Condition")
+
+        # Add expert topics text below legend1
+        expert_topics_text = "\n".join(expert_topics)
+        fig.text(0.88, 0.85, f"Topics:\n{expert_topics_text}",
+                fontsize=8, va='top', ha='left',
+                bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.3))
+
+    # Add model legend (top right of bottom right chart)
+    model_handles = [h for h, l in zip(bar_handles, bar_labels) if l not in ["Delegate", "Trustee"]]
+    model_labels = [l for l in bar_labels if l not in ["Delegate", "Trustee"]]
+    if model_handles:
+        legend2 = fig.legend(model_handles, model_labels,
+                  loc="upper left", bbox_to_anchor=(0.88, 0.48),
+                  fontsize=10, frameon=True, title="Model")
+
+        # Add no consensus topics text below legend2
+        no_consensus_topics_text = "\n".join(no_consensus_topics)
+        fig.text(0.88, 0.33, f"Topics:\n{no_consensus_topics_text}",
+                fontsize=8, va='top', ha='left',
+                bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.3))
 
     # Remove individual legends
     for ax_row in axes:
@@ -550,15 +635,14 @@ def create_combined_demographic_plot(
             if legend:
                 legend.remove()
 
-    # Overall title
+    # Overall title (no bold)
     fig.suptitle(
-        "Agreement Rates by Demographics Across Models",
+        f"Agreement with Expert Vote and Delegate/Trustee Vote Similarity by Political Affiliation and Race",
         fontsize=16,
-        fontweight="bold",
         y=0.98
     )
 
-    plt.tight_layout(rect=[0, 0, 1, 0.96])
+    plt.tight_layout(rect=[0, 0, 0.87, 0.96])  # Leave space on right for legends
 
     if output_file:
         output_dir = os.path.dirname(output_file)
@@ -602,6 +686,21 @@ if __name__ == "__main__":
 
     demographics = ["Political Affiliation", "Race"]
 
+    # Define topic lists (easily editable)
+    expert_topics = [
+        "Childhood Vaccination",
+        "Limiting Carbon Emissions",
+        "Free Trade",
+        "GMOs Safe"
+    ]
+
+    no_consensus_topics = [
+        "Minimum wage",
+        "Sex Education",
+        "Universal Healthcare",
+        "Abortion"
+    ]
+
     create_combined_demographic_plot(
         expert_consensus_policies=expert_consensus_policies,
         no_consensus_policies=no_consensus_policies,
@@ -613,5 +712,7 @@ if __name__ == "__main__":
         demographics=demographics,
         alphas=alphas,
         alpha=alpha,
+        expert_topics=expert_topics,
+        no_consensus_topics=no_consensus_topics,
         output_file="agreement_visuals/combined_demographic_agreement.png"
     )
