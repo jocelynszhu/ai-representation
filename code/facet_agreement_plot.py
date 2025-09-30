@@ -68,18 +68,27 @@ def create_facet_agreement_plot(
     alphas = np.arange(0.0, 1.01, 0.1)
 
     # Define colors for different models
+    # Mean line colors
     trustee_colors_by_model = {
-        "claude-3-sonnet-v2": '#1f77b4',      # Dark blue
-        "claude-3-haiku-v2-mini": '#4682b4',  # Steel blue
-        "gpt-4o-mini": '#ff8c00',             # Dark orange
-        "gpt-4o": '#dc143c'                   # Crimson
+        "claude-3-sonnet-v2": '#000000',      # Black
+        "claude-3-haiku-v2-mini": '#0000FF',  # Blue
+        "gpt-4o-mini": '#FFA500',             # Orange
+        "gpt-4o": '#FF0000'                   # Red
     }
 
     delegate_colors_by_model = {
-        "claude-3-sonnet-v2": '#87ceeb',      # Sky blue
-        "claude-3-haiku-v2-mini": '#add8e6',  # Light blue
-        "gpt-4o-mini": '#ffa500',             # Orange
-        "gpt-4o": '#ff6347'                   # Tomato
+        "claude-3-sonnet-v2": '#000000',      # Black
+        "claude-3-haiku-v2-mini": '#0000FF',  # Blue
+        "gpt-4o-mini": '#FFA500',             # Orange
+        "gpt-4o": '#FF0000'                   # Red
+    }
+
+    # Individual prompt colors (lighter versions)
+    individual_prompt_colors = {
+        "claude-3-sonnet-v2": '#808080',      # Grey
+        "claude-3-haiku-v2-mini": '#ADD8E6',  # Light blue
+        "gpt-4o-mini": '#FFD580',             # Light orange
+        "gpt-4o": '#FFB6C1'                   # Pink
     }
 
     # Process each subplot
@@ -103,50 +112,49 @@ def create_facet_agreement_plot(
                     show_plot=False
                 )
 
-                # Plot individual trustee_ls prompts (thin, light)
+                # Plot individual trustee_ls prompts (thin, light, model-specific color)
                 for prompt_num in trustee_prompt_nums:
                     col_name = f'trustee_ls_prompt_{prompt_num}_mean'
                     if col_name in df.columns:
                         ax.plot(alphas, df[col_name],
-                               color=trustee_color_light, linewidth=1, alpha=0.5,
+                               color=individual_prompt_colors[model], linewidth=1, alpha=0.5,
                                linestyle='-', zorder=1)
 
-                # Plot individual trustee_lsd prompts (thin, light)
+                # Plot individual trustee_lsd prompts (thin, light, model-specific color)
                 for prompt_num in trustee_prompt_nums:
                     col_name = f'trustee_lsd_prompt_{prompt_num}_mean'
                     if col_name in df.columns:
                         ax.plot(alphas, df[col_name],
-                               color=trustee_color_light, linewidth=1, alpha=0.5,
+                               color=individual_prompt_colors[model], linewidth=1, alpha=0.5,
                                linestyle='-', zorder=1)
 
-                # Plot individual delegate prompts (thin, light, dashed)
+                # Plot individual delegate prompts (thin, light, dashed, model-specific color)
                 for prompt_num in delegate_prompt_nums:
                     col_name = f'delegate_prompt_{prompt_num}_mean'
                     if col_name in df.columns:
                         ax.plot(alphas, df[col_name],
-                               color=delegate_color_light, linewidth=1, alpha=0.5,
+                               color=individual_prompt_colors[model], linewidth=1, alpha=0.5,
                                linestyle=(0, (5, 5)), zorder=1)
 
                 # Plot trustee overall mean for this model (thick line with model-specific color)
                 if 'trustee_overall_mean' in df.columns:
                     line = ax.plot(alphas, df['trustee_overall_mean'],
                                  color=trustee_colors_by_model[model], linewidth=3, alpha=1.0,
-                                 linestyle='-', label=f'{display_name} Trustee', zorder=3)
-                    if not legend_created:
-                        legend_elements.append((line[0], f'{display_name} Trustee'))
+                                 linestyle='-', zorder=3)
+                    # Only add to legend once per model (during first row processing)
+                    if row == 0 and display_name not in [label for _, label in legend_elements]:
+                        legend_elements.append((line[0], display_name))
 
                 # Plot delegate overall mean for this model (thick dashed line with model-specific color)
                 if 'delegate_overall_mean' in df.columns:
-                    line = ax.plot(alphas, df['delegate_overall_mean'],
-                                 color=delegate_colors_by_model[model], linewidth=3, alpha=1.0,
-                                 linestyle=(0, (5, 5)), label=f'{display_name} Delegate', zorder=3)
-                    if not legend_created:
-                        legend_elements.append((line[0], f'{display_name} Delegate'))
+                    ax.plot(alphas, df['delegate_overall_mean'],
+                           color=delegate_colors_by_model[model], linewidth=3, alpha=1.0,
+                           linestyle=(0, (5, 5)), zorder=3)
 
             # Format subplot
             ax.grid(True, alpha=0.3)
             ax.set_xlim(0, 1)
-            ax.set_ylim(0.4, 1)
+            ax.set_ylim(0.5, 1)
 
             # Hide top and right spines
             ax.spines['top'].set_visible(False)
@@ -167,34 +175,11 @@ def create_facet_agreement_plot(
             if row == 1:
                 ax.set_xlabel("Long Term Weight", fontsize=12)
 
-            # Mark that we've created legend elements
-            if not legend_created:
-                legend_created = True
-
-    # Create shared legend in upper right
+    # Create shared legend in bottom right with just the 4 models
     if legend_elements:
-        # Position legend in upper right area
         handles, labels = zip(*legend_elements)
-
-        # Reorder legend elements for better organization
-        # We want: Trustee Mean, Delegate Mean, individual trustee types
-        ordered_handles = []
-        ordered_labels = []
-
-        # Add means first
-        for i, label in enumerate(labels):
-            if "Mean" in label:
-                ordered_handles.append(handles[i])
-                ordered_labels.append(labels[i])
-
-        # Add individual types
-        for i, label in enumerate(labels):
-            if "Mean" not in label:
-                ordered_handles.append(handles[i])
-                ordered_labels.append(labels[i])
-
-        fig.legend(ordered_handles, ordered_labels,
-                  bbox_to_anchor=(0.98, 0.98), loc='upper right',
+        fig.legend(handles, labels,
+                  bbox_to_anchor=(0.98, 0.02), loc='lower right',
                   fontsize=11, frameon=True, fancybox=True, shadow=True)
 
     # Set overall title
