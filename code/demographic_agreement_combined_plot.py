@@ -420,7 +420,7 @@ def plot_expert_agreement_panel(
                 delegate_bar_plotted = True
             else:  # Trustee
                 bar_hatch = "///"  # Forward slash hatch for trustee
-                bar_label = "Trustee" if not trustee_bar_plotted else None
+                bar_label = "Trustee (Long-term)" if not trustee_bar_plotted else None
                 trustee_bar_plotted = True
 
             # Plot bar (gray color, with or without hatch)
@@ -682,20 +682,20 @@ def create_combined_demographic_plot(
     # Add bar type legend (bottom left, horizontal) - from top row
     bar_handles, bar_labels = axes[0, 0].get_legend_handles_labels()
     # Filter to get only Delegate/Trustee (first 2 items)
-    bar_type_handles = [h for h, l in zip(bar_handles, bar_labels) if l in ["Delegate", "Trustee"]]
-    bar_type_labels = [l for l in bar_labels if l in ["Delegate", "Trustee"]]
+    bar_type_handles = [h for h, l in zip(bar_handles, bar_labels) if l in ["Delegate", "Trustee (Long-term)"]]
+    bar_type_labels = [l for l in bar_labels if l in ["Delegate", "Trustee (Long-term)"]]
     if bar_type_handles:
         legend1 = fig.legend(bar_type_handles, bar_type_labels,
-                  loc="lower left", bbox_to_anchor=(0.30, 0.03),
+                  loc="lower left", bbox_to_anchor=(0.27, 0.04),
                   fontsize=10, frameon=True, title="Condition",
                   ncol=2, borderaxespad=0, handlelength=2, handleheight=1.5)
 
     # Add model legend (bottom center-right, horizontal)
-    model_handles = [h for h, l in zip(bar_handles, bar_labels) if l not in ["Delegate", "Trustee"]]
-    model_labels = [l for l in bar_labels if l not in ["Delegate", "Trustee"]]
+    model_handles = [h for h, l in zip(bar_handles, bar_labels) if l not in ["Delegate", "Trustee (Long-term)"]]
+    model_labels = [l for l in bar_labels if l not in ["Delegate", "Trustee (Long-term)"]]
     if model_handles:
         legend2 = fig.legend(model_handles, model_labels,
-                  loc="lower left", bbox_to_anchor=(0.45, 0.03),
+                  loc="lower left", bbox_to_anchor=(0.45, 0.04),
                   fontsize=10, frameon=True, title="Model",
                   ncol=4, borderaxespad=0, handlelength=2, handleheight=1.5)
 
@@ -775,7 +775,7 @@ if __name__ == "__main__":
         "Childhood Vaccination",
         "Free Trade",
         "Water Fluoridation",
-        "Limit Carbon Emissions",
+        "Limiting Carbon Emissions",
     ]
 
     no_consensus_topics = [
