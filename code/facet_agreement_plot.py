@@ -2,6 +2,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
 from typing import List, Optional, Tuple
+from matplotlib.lines import Line2D
 from agreement_plotting import plot_mean_across_policies
 
 def create_facet_agreement_plot(
@@ -175,12 +176,57 @@ def create_facet_agreement_plot(
             if row == 1:
                 ax.set_xlabel("Long Term Weight", fontsize=12)
 
-    # Create shared legend in bottom right with just the 4 models
+    # Create Condition legend (bottom left)
+    condition_handles = [
+        Line2D([0], [0], color='grey', linewidth=3, linestyle='-'),
+        Line2D([0], [0], color='darkgrey', linewidth=3, linestyle=(0, (5, 5)))
+    ]
+    condition_labels = ["Trustee (Long-term)", "Delegate"]
+
+    legend1 = fig.legend(condition_handles, condition_labels,
+                        loc="lower left", bbox_to_anchor=(0.21, 0.03),
+                        fontsize=10, frameon=True, title="Condition",
+                        ncol=2, borderaxespad=0, handlelength=2, handleheight=1.5)
+
+    # Create Model legend (bottom center-right)
     if legend_elements:
-        handles, labels = zip(*legend_elements)
-        fig.legend(handles, labels,
-                  bbox_to_anchor=(0.98, 0.02), loc='lower right',
-                  fontsize=11, frameon=True, fancybox=True, shadow=True)
+        model_handles, model_labels = zip(*legend_elements)
+        legend2 = fig.legend(model_handles, model_labels,
+                           loc="lower left", bbox_to_anchor=(0.45, 0.03),
+                           fontsize=10, frameon=True, title="Model",
+                           ncol=4, borderaxespad=0, handlelength=2, handleheight=1.5)
+
+    # Add topic text boxes
+    # Top row: No consensus topics (Model Defaults)
+    no_consensus_topics = [
+        "Minimum Wage",
+        "Abortion",
+        "Race/Gender in Hiring",
+        "Universal Healthcare",
+        "Sex Education",
+        "Eat Less Meat",
+        "Immigration",
+        "Crime Sentences",
+        "Government Pension",
+        "Housing for the Homeless"
+    ]
+    no_consensus_text = "\n".join(no_consensus_topics)
+    fig.text(0.93, 0.72, no_consensus_text,
+            fontsize=8, va='center', ha='center',
+            bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.3, pad=0.5))
+
+    # Bottom row: Expert consensus topics
+    expert_topics = [
+        "GMOs Safe",
+        "Childhood Vaccination",
+        "Free Trade",
+        "Water Fluoridation",
+        "Limiting Carbon Emissions"
+    ]
+    expert_text = "\n".join(expert_topics)
+    fig.text(0.93, 0.28, expert_text,
+            fontsize=8, va='center', ha='center',
+            bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.3, pad=0.5))
 
     # Set overall title
     fig.suptitle("Agreement with Model Defaults and Expert Consensus",
@@ -188,30 +234,23 @@ def create_facet_agreement_plot(
 
     # Adjust layout
     plt.tight_layout()
-    plt.subplots_adjust(top=0.90, right=0.85)
+    plt.subplots_adjust(top=0.90, right=0.87, bottom=0.10)
 
     # Save if path provided
     if save_path:
         plt.savefig(save_path, dpi=300, bbox_inches='tight')
 
     return fig
-#%%
-fig = create_facet_agreement_plot(
-    policy_indices=list(range(30)),
-    delegate_prompt_nums=[0, 1, 2, 3, 4],
-    trustee_prompt_nums=[0, 1, 2],
-    figsize=(16, 12)
-)
-plt.show()
 
-# # Example usage
-# if __name__ == "__main__":
-#     # Example: Create facet plot for policies 0-9 with different prompt configurations
-#     fig = create_facet_agreement_plot(
-#         policy_indices=list(range(10)),
-#         delegate_prompt_nums=[0, 1, 2, 3, 4],
-#         trustee_prompt_nums=[0, 1, 2],
-#         figsize=(16, 12)
-#     )
-#     plt.show()
+
+# Example usage
+if __name__ == "__main__":
+    # Example: Create facet plot for all 30 policies
+    fig = create_facet_agreement_plot(
+        policy_indices=list(range(30)),
+        delegate_prompt_nums=[0, 1, 2, 3, 4],
+        trustee_prompt_nums=[0, 1, 2],
+        figsize=(16, 12)
+    )
+    plt.show()
 # %%

@@ -688,7 +688,7 @@ def create_combined_demographic_plot(
     bar_type_labels = [l for l in bar_labels if l in ["Delegate", "Trustee (Long-term)"]]
     if bar_type_handles:
         legend1 = fig.legend(bar_type_handles, bar_type_labels,
-                  loc="lower left", bbox_to_anchor=(0.21, 0.03),
+                  loc="lower left", bbox_to_anchor=(0.2, 0.03),
                   fontsize=10, frameon=True, title="Condition",
                   ncol=2, borderaxespad=0, handlelength=2, handleheight=1.5)
 
@@ -697,7 +697,7 @@ def create_combined_demographic_plot(
     model_labels = [l for l in bar_labels if l not in ["Delegate", "Trustee (Long-term)"]]
     if model_handles:
         legend2 = fig.legend(model_handles, model_labels,
-                  loc="lower left", bbox_to_anchor=(0.45, 0.03),
+                  loc="lower left", bbox_to_anchor=(0.39, 0.03),
                   fontsize=10, frameon=True, title="Model",
                   ncol=4, borderaxespad=0, handlelength=2, handleheight=1.5)
 
