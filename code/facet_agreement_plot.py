@@ -28,9 +28,23 @@ def create_facet_agreement_plot(
     # Create 2x2 subplot grid
     fig, axes = plt.subplots(2, 2, figsize=figsize, sharex=True, sharey=True)
 
-    # Model names and configurations
-    models = ["claude-3-sonnet-v2", "gpt-4o"]
-    model_display_names = ["Claude 3 Sonnet", "GPT-4o"]
+    # Model names and configurations - organized as Claude models (left) and GPT models (right)
+    model_groups = [
+        # Left column: Claude models
+        {
+            "models": ["claude-3-sonnet-v2", "claude-3-haiku-v2-mini"],
+            "display_names": ["Claude 3 Sonnet", "Claude 3 Haiku"],
+            "col": 0,
+            "title": "Claude Models"
+        },
+        # Right column: GPT-4o models
+        {
+            "models": ["gpt-4o-mini", "gpt-4o"],
+            "display_names": ["GPT-4o-mini", "GPT-4o"],
+            "col": 1,
+            "title": "GPT-4o Models"
+        }
+    ]
 
     # Define subplot configurations
     configs = [
@@ -53,64 +67,81 @@ def create_facet_agreement_plot(
     # Parameter range
     alphas = np.arange(0.0, 1.01, 0.1)
 
+    # Define colors for different models
+    trustee_colors_by_model = {
+        "claude-3-sonnet-v2": '#1f77b4',      # Dark blue
+        "claude-3-haiku-v2-mini": '#4682b4',  # Steel blue
+        "gpt-4o-mini": '#ff8c00',             # Dark orange
+        "gpt-4o": '#dc143c'                   # Crimson
+    }
+
+    delegate_colors_by_model = {
+        "claude-3-sonnet-v2": '#87ceeb',      # Sky blue
+        "claude-3-haiku-v2-mini": '#add8e6',  # Light blue
+        "gpt-4o-mini": '#ffa500',             # Orange
+        "gpt-4o": '#ff6347'                   # Tomato
+    }
+
     # Process each subplot
     for config in configs:
         row = config["row"]
 
-        for col, (model, model_display) in enumerate(zip(models, model_display_names)):
+        for group in model_groups:
+            col = group["col"]
             ax = axes[row, col]
 
-            # Get data using plot_mean_across_policies
-            df = plot_mean_across_policies(
-                policy_indices=policy_indices,
-                delegate_prompt_nums=delegate_prompt_nums,
-                trustee_prompt_nums=trustee_prompt_nums,
-                model=model,
-                trustee_type="both",
-                consensus_filter=config["consensus_filter"],
-                compare_expert=config["compare_expert"],
-                show_plot=False
-            )
+            for model, display_name in zip(group["models"], group["display_names"]):
+                # Get data using plot_mean_across_policies
+                df = plot_mean_across_policies(
+                    policy_indices=policy_indices,
+                    delegate_prompt_nums=delegate_prompt_nums,
+                    trustee_prompt_nums=trustee_prompt_nums,
+                    model=model,
+                    trustee_type="both",
+                    consensus_filter=config["consensus_filter"],
+                    compare_expert=config["compare_expert"],
+                    show_plot=False
+                )
 
-            # Plot individual trustee_ls prompts (thin, light blue)
-            for prompt_num in trustee_prompt_nums:
-                col_name = f'trustee_ls_prompt_{prompt_num}_mean'
-                if col_name in df.columns:
-                    ax.plot(alphas, df[col_name],
-                           color=trustee_color_light, linewidth=1, alpha=0.8,
-                           linestyle='-', zorder=1)
+                # Plot individual trustee_ls prompts (thin, light)
+                for prompt_num in trustee_prompt_nums:
+                    col_name = f'trustee_ls_prompt_{prompt_num}_mean'
+                    if col_name in df.columns:
+                        ax.plot(alphas, df[col_name],
+                               color=trustee_color_light, linewidth=1, alpha=0.5,
+                               linestyle='-', zorder=1)
 
-            # Plot individual trustee_lsd prompts (thin, light blue)
-            for prompt_num in trustee_prompt_nums:
-                col_name = f'trustee_lsd_prompt_{prompt_num}_mean'
-                if col_name in df.columns:
-                    ax.plot(alphas, df[col_name],
-                           color=trustee_color_light, linewidth=1, alpha=0.8,
-                           linestyle='-', zorder=1)
+                # Plot individual trustee_lsd prompts (thin, light)
+                for prompt_num in trustee_prompt_nums:
+                    col_name = f'trustee_lsd_prompt_{prompt_num}_mean'
+                    if col_name in df.columns:
+                        ax.plot(alphas, df[col_name],
+                               color=trustee_color_light, linewidth=1, alpha=0.5,
+                               linestyle='-', zorder=1)
 
-            # Plot individual delegate prompts (thin, light red, dashed)
-            for prompt_num in delegate_prompt_nums:
-                col_name = f'delegate_prompt_{prompt_num}_mean'
-                if col_name in df.columns:
-                    ax.plot(alphas, df[col_name],
-                           color=delegate_color_light, linewidth=1, alpha=0.8,
-                           linestyle=(0, (5, 5)), zorder=1)  # Custom dash pattern
+                # Plot individual delegate prompts (thin, light, dashed)
+                for prompt_num in delegate_prompt_nums:
+                    col_name = f'delegate_prompt_{prompt_num}_mean'
+                    if col_name in df.columns:
+                        ax.plot(alphas, df[col_name],
+                               color=delegate_color_light, linewidth=1, alpha=0.5,
+                               linestyle=(0, (5, 5)), zorder=1)
 
-            # Plot trustee overall mean (thick, dark blue)
-            if 'trustee_overall_mean' in df.columns:
-                line = ax.plot(alphas, df['trustee_overall_mean'],
-                             color=trustee_color_dark, linewidth=3, alpha=1.0,
-                             linestyle='-', zorder=3)
-                if not legend_created:
-                    legend_elements.append((line[0], "Trustee Mean"))
+                # Plot trustee overall mean for this model (thick line with model-specific color)
+                if 'trustee_overall_mean' in df.columns:
+                    line = ax.plot(alphas, df['trustee_overall_mean'],
+                                 color=trustee_colors_by_model[model], linewidth=3, alpha=1.0,
+                                 linestyle='-', label=f'{display_name} Trustee', zorder=3)
+                    if not legend_created:
+                        legend_elements.append((line[0], f'{display_name} Trustee'))
 
-            # Plot delegate overall mean (thick, dark red, dashed)
-            if 'delegate_overall_mean' in df.columns:
-                line = ax.plot(alphas, df['delegate_overall_mean'],
-                             color=delegate_color_dark, linewidth=3, alpha=1.0,
-                             linestyle=(0, (5, 5)), zorder=3)  # Custom dash pattern
-                if not legend_created:
-                    legend_elements.append((line[0], "Delegate Mean"))
+                # Plot delegate overall mean for this model (thick dashed line with model-specific color)
+                if 'delegate_overall_mean' in df.columns:
+                    line = ax.plot(alphas, df['delegate_overall_mean'],
+                                 color=delegate_colors_by_model[model], linewidth=3, alpha=1.0,
+                                 linestyle=(0, (5, 5)), label=f'{display_name} Delegate', zorder=3)
+                    if not legend_created:
+                        legend_elements.append((line[0], f'{display_name} Delegate'))
 
             # Format subplot
             ax.grid(True, alpha=0.3)
@@ -126,7 +157,7 @@ def create_facet_agreement_plot(
 
             # Set titles for top row
             if row == 0:
-                ax.set_title(model_display, fontsize=14)
+                ax.set_title(group["title"], fontsize=14)
 
             # Set y-axis labels for leftmost column
             if col == 0:

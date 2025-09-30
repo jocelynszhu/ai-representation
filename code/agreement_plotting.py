@@ -628,13 +628,13 @@ def plot_mean_across_policies(
 # #                                     compare_expert=False)
 # #         #plt.show()
 # # #%%
-plot_mean_across_policies(policy_indices=range(30),
-                        delegate_prompt_nums=[0,1,2,3,4],
-                        trustee_prompt_nums=[0,1,2],
-                        model="gpt-4o-mini",
-                        trustee_type="both",
-                        consensus_filter=None,
-                        compare_expert=False)
+# plot_mean_across_policies(policy_indices=range(30),
+#                         delegate_prompt_nums=[0,1,2,3,4],
+#                         trustee_prompt_nums=[0,1,2],
+#                         model="claude-3-sonnet-v2",
+#                         trustee_type="both",
+#                         consensus_filter=None,
+#                         compare_expert=False)
 # %%
 
 # %%
