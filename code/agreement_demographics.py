@@ -227,24 +227,26 @@ def _calculate_trustee_agreement_rate_by_demo(
     votes = []
 
     for _, row in trustee_data.iterrows():
-        if trustee_type == "trustee_ls":
-            entry = {
-                "yes_vote": {"short_util": row['yes_short_util'], "long_util": row['yes_long_util']},
-                "no_vote": {"short_util": row['no_short_util'], "long_util": row['no_long_util']}
-            }
-            vote_result = calculate_weighted_vote(entry, alpha)
+        try:
+            if trustee_type == "trustee_ls":
+                entry = {
+                    "yes_vote": {"short_util": row['yes_short_util'], "long_util": row['yes_long_util']},
+                    "no_vote": {"short_util": row['no_short_util'], "long_util": row['no_long_util']}
+                }
+                vote_result = calculate_weighted_vote(entry, alpha)
 
-        elif trustee_type == "trustee_lsd":
-            entry = {"yes": {}, "no": {}}
-            for period in ["0-5 years", "5-10 years", "10-15 years", "15-20 years", "20-25 years", "25-30 years"]:
-                period_key = period.replace("-", "_").replace(" ", "_")
-                entry["yes"][period] = {"score": row[f'yes_{period_key}_score']}
-                entry["no"][period] = {"score": row[f'no_{period_key}_score']}
+            elif trustee_type == "trustee_lsd":
+                entry = {"yes": {}, "no": {}}
+                for period in ["0-5 years", "5-10 years", "10-15 years", "15-20 years", "20-25 years", "25-30 years"]:
+                    period_key = period.replace("-", "_").replace(" ", "_")
+                    entry["yes"][period] = {"score": row[f'yes_{period_key}_score']}
+                    entry["no"][period] = {"score": row[f'no_{period_key}_score']}
 
-            vote_result = calculate_discounted_vote(entry, alpha)
-        
+                vote_result = calculate_discounted_vote(entry, alpha)
 
-        votes.append({"participant_id": row['participant_id'], "vote": vote_result['vote']})
+            votes.append({"participant_id": row['participant_id'], "vote": vote_result['vote']})
+        except Exception as e:
+            continue  # Skip malformed rows
     if not votes:
         if bio_df is not None and demographic is not None:
             return pd.Series(dtype=np.float64 )
