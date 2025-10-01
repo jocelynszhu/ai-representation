@@ -124,6 +124,9 @@ def create_agreement_table(
     result_df = pd.DataFrame(rows, columns=columns, index=policy_statements)
     result_df.index.name = "Policy"
 
+    # Round all values to 2 decimal places
+    result_df = result_df.round(2)
+
     return result_df
 
 
