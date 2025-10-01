@@ -66,46 +66,41 @@ def collect_expert_agreement_data(
         print(f"\nProcessing model: {model}")
 
         for policy_idx in policy_indices:
-            try:
-                df = create_agreement_dataframe(
-                    policy_index=policy_idx,
-                    delegate_prompt_nums=delegate_prompt_nums,
-                    trustee_prompt_nums=trustee_prompt_nums,
-                    model=model,
-                    alpha=alpha,
-                    trustee_type=trustee_type,
-                    compare_expert=True,
-                    bio_df=bio_df,
-                    demographic=demographic
-                )
+            df = create_agreement_dataframe(
+                policy_index=policy_idx,
+                delegate_prompt_nums=delegate_prompt_nums,
+                trustee_prompt_nums=trustee_prompt_nums,
+                model=model,
+                alpha=alpha,
+                trustee_type=trustee_type,
+                compare_expert=True,
+                bio_df=bio_df,
+                demographic=demographic
+            )
 
-                # Extract delegate and trustee agreement rates by group
-                for col in df.columns:
-                    if "_agreement_" in col:
-                        parts = col.split("_agreement_")
-                        if len(parts) == 2:
-                            group = parts[1]
+            # Extract delegate and trustee agreement rates by group
+            for col in df.columns:
+                if "_agreement_" in col:
+                    parts = col.split("_agreement_")
+                    if len(parts) == 2:
+                        group = parts[1]
 
-                            if col.startswith("trustee_"):
-                                val = df[col].iloc[0]
-                                condition = "Trustee"
-                            elif col.startswith("delegate_"):
-                                val = df[col].iloc[0]
-                                condition = "Delegate"
-                            else:
-                                continue
+                        if col.startswith("trustee_"):
+                            val = df[col].iloc[0]
+                            condition = "Trustee"
+                        elif col.startswith("delegate_"):
+                            val = df[col].iloc[0]
+                            condition = "Delegate"
+                        else:
+                            continue
 
-                            all_results.append({
-                                "demographic_group": group,
-                                "condition": condition,
-                                "model": model,
-                                "agreement_rate": val,
-                                "policy_idx": policy_idx
-                            })
-
-            except Exception as e:
-                print(f"  Error with policy {policy_idx + 1}: {e}")
-                continue
+                        all_results.append({
+                            "demographic_group": group,
+                            "condition": condition,
+                            "model": model,
+                            "agreement_rate": val,
+                            "policy_idx": policy_idx
+                        })
 
     results_df = pd.DataFrame(all_results)
 
@@ -144,46 +139,41 @@ def collect_default_agreement_data(
         print(f"\nProcessing model: {model}")
 
         for policy_idx in policy_indices:
-            try:
-                df = create_agreement_dataframe(
-                    policy_index=policy_idx,
-                    delegate_prompt_nums=delegate_prompt_nums,
-                    trustee_prompt_nums=trustee_prompt_nums,
-                    model=model,
-                    alpha=alpha,
-                    trustee_type=trustee_type,
-                    compare_expert=False,  # Compare to model default
-                    bio_df=bio_df,
-                    demographic=demographic
-                )
+            df = create_agreement_dataframe(
+                policy_index=policy_idx,
+                delegate_prompt_nums=delegate_prompt_nums,
+                trustee_prompt_nums=trustee_prompt_nums,
+                model=model,
+                alpha=alpha,
+                trustee_type=trustee_type,
+                compare_expert=False,  # Compare to model default
+                bio_df=bio_df,
+                demographic=demographic
+            )
 
-                # Extract delegate and trustee agreement rates by group
-                for col in df.columns:
-                    if "_agreement_" in col:
-                        parts = col.split("_agreement_")
-                        if len(parts) == 2:
-                            group = parts[1]
+            # Extract delegate and trustee agreement rates by group
+            for col in df.columns:
+                if "_agreement_" in col:
+                    parts = col.split("_agreement_")
+                    if len(parts) == 2:
+                        group = parts[1]
 
-                            if col.startswith("trustee_"):
-                                val = df[col].iloc[0]
-                                condition = "Trustee"
-                            elif col.startswith("delegate_"):
-                                val = df[col].iloc[0]
-                                condition = "Delegate"
-                            else:
-                                continue
+                        if col.startswith("trustee_"):
+                            val = df[col].iloc[0]
+                            condition = "Trustee"
+                        elif col.startswith("delegate_"):
+                            val = df[col].iloc[0]
+                            condition = "Delegate"
+                        else:
+                            continue
 
-                            all_results.append({
-                                "demographic_group": group,
-                                "condition": condition,
-                                "model": model,
-                                "agreement_rate": val,
-                                "policy_idx": policy_idx
-                            })
-
-            except Exception as e:
-                print(f"  Error with policy {policy_idx + 1}: {e}")
-                continue
+                        all_results.append({
+                            "demographic_group": group,
+                            "condition": condition,
+                            "model": model,
+                            "agreement_rate": val,
+                            "policy_idx": policy_idx
+                        })
 
     results_df = pd.DataFrame(all_results)
 

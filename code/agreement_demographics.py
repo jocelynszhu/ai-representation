@@ -94,18 +94,14 @@ def create_agreement_dataframe(
 
             for tt in trustee_types_to_process:
                 print(f"    Processing trustee type {tt} prompt {prompt_num}...")
-                try:
-                    data = load_policy_votes(model, tt, policy_index, prompt_num)
-                    rates = _calculate_trustee_agreement_rate_by_demo(
-                        data["trustee"], alpha, tt, reference_vote, bio_df, demographic
-                    )
-                    for group, val in rates.items():
-                        if group not in group_rates_by_type:
-                            group_rates_by_type[group] = []
-                        group_rates_by_type[group].append(val)
-                except Exception as e:
-                    print(f"    Error processing trustee type {tt} prompt {prompt_num}: {e}")
-                    continue
+                data = load_policy_votes(model, tt, policy_index, prompt_num)
+                rates = _calculate_trustee_agreement_rate_by_demo(
+                    data["trustee"], alpha, tt, reference_vote, bio_df, demographic
+                )
+                for group, val in rates.items():
+                    if group not in group_rates_by_type:
+                        group_rates_by_type[group] = []
+                    group_rates_by_type[group].append(val)
 
             # Average across trustee types for each group
 
@@ -118,15 +114,11 @@ def create_agreement_dataframe(
             rates_by_type = []
 
             for tt in trustee_types_to_process:
-                try:
-                    data = load_policy_votes(model, tt, policy_index, prompt_num)
-                    agreement_rate = _calculate_trustee_agreement_rate_by_demo(
-                        data["trustee"], alpha, tt, reference_vote
-                    )
-                    rates_by_type.append(agreement_rate)
-                except Exception as e:
-                    print(f"    Error processing trustee type {tt} prompt {prompt_num}: {e}")
-                    continue
+                data = load_policy_votes(model, tt, policy_index, prompt_num)
+                agreement_rate = _calculate_trustee_agreement_rate_by_demo(
+                    data["trustee"], alpha, tt, reference_vote
+                )
+                rates_by_type.append(agreement_rate)
 
             # Average across trustee types
             result_data[f"trustee_prompt_{prompt_num}_agreement"] = np.nanmean(rates_by_type) if rates_by_type else np.nan
@@ -135,32 +127,22 @@ def create_agreement_dataframe(
     for prompt_num in delegate_prompt_nums:
         print(f"  Processing delegate prompt {prompt_num}...")
 
-        try:
-            data = load_policy_votes(model, None, policy_index, prompt_num)
-            if demographic and bio_df is not None:
-                # Delegate (split by demographic)
-                rates = _calculate_delegate_agreement_rate_by_demo(
-                    data["delegate"], reference_vote, bio_df, demographic
-                )
-                for group, val in rates.items():
-                    col_name = f"delegate_prompt_{prompt_num}_agreement_{group}"
-                    result_data[col_name] = val
+        data = load_policy_votes(model, None, policy_index, prompt_num)
+        if demographic and bio_df is not None:
+            # Delegate (split by demographic)
+            rates = _calculate_delegate_agreement_rate_by_demo(
+                data["delegate"], reference_vote, bio_df, demographic
+            )
+            for group, val in rates.items():
+                col_name = f"delegate_prompt_{prompt_num}_agreement_{group}"
+                result_data[col_name] = val
 
-            else:
-                # Delegate (overall)
-                delegate_agreement = _calculate_delegate_agreement_rate_by_demo(
-                    data["delegate"], reference_vote
-                )
-                result_data[f"delegate_prompt_{prompt_num}_agreement"] = delegate_agreement
-
-        except Exception as e:
-            print(f"  Error processing delegate prompt {prompt_num}: {e}")
-            # Fill with NaN values
-            if demographic and bio_df is not None:
-                # If demographic mode, add NaNs for each group (unknown groups until first success)
-                pass
-            else:
-                result_data[f"delegate_prompt_{prompt_num}_agreement"] = np.nan
+        else:
+            # Delegate (overall)
+            delegate_agreement = _calculate_delegate_agreement_rate_by_demo(
+                data["delegate"], reference_vote
+            )
+            result_data[f"delegate_prompt_{prompt_num}_agreement"] = delegate_agreement
 
     # Convert to DataFrame (single row)
     df = pd.DataFrame([result_data]) if result_data else pd.DataFrame()

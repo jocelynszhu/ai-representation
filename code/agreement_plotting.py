@@ -68,34 +68,25 @@ def create_agreement_dataframe(
     for prompt_num in prompt_nums:
         print(f"  Processing prompt {prompt_num}...")
 
-        try:
-            # Load data for this prompt
-            data = load_policy_votes(model, trustee_type, policy_index, prompt_num)
+        # Load data for this prompt
+        data = load_policy_votes(model, trustee_type, policy_index, prompt_num)
 
-            # Calculate trustee agreement rates across alpha values
-            if trustee_type:
-                trustee_agreements = []
-                for alpha in alphas:
-                    agreement_rate = _calculate_trustee_agreement_rate(
-                        data['trustee'], alpha, trustee_type, reference_vote
-                    )
-                    trustee_agreements.append(agreement_rate)
-                result_data[f'trustee_prompt_{prompt_num}_agreement'] = trustee_agreements
-            # Calculate delegate agreement rate (constant across alpha)
-            if not trustee_type:
-                delegate_agreement = _calculate_delegate_agreement_rate(
-                    data['delegate'], reference_vote
+        # Calculate trustee agreement rates across alpha values
+        if trustee_type:
+            trustee_agreements = []
+            for alpha in alphas:
+                agreement_rate = _calculate_trustee_agreement_rate(
+                    data['trustee'], alpha, trustee_type, reference_vote
                 )
-                delegate_agreements = [delegate_agreement] * len(alphas)
-                result_data[f'delegate_prompt_{prompt_num}_agreement'] = delegate_agreements
-            
-            
-
-        except Exception as e:
-            print(f"  Error processing prompt {prompt_num}: {e}")
-            # Fill with NaN values
-            result_data[f'trustee_prompt_{prompt_num}_agreement'] = [np.nan] * len(alphas)
-            result_data[f'delegate_prompt_{prompt_num}_agreement'] = [np.nan] * len(alphas)
+                trustee_agreements.append(agreement_rate)
+            result_data[f'trustee_prompt_{prompt_num}_agreement'] = trustee_agreements
+        # Calculate delegate agreement rate (constant across alpha)
+        if not trustee_type:
+            delegate_agreement = _calculate_delegate_agreement_rate(
+                data['delegate'], reference_vote
+            )
+            delegate_agreements = [delegate_agreement] * len(alphas)
+            result_data[f'delegate_prompt_{prompt_num}_agreement'] = delegate_agreements
 
     # Create DataFrame
     df = pd.DataFrame(result_data)
@@ -380,46 +371,41 @@ def plot_mean_across_policies(
 
     # Collect data from all policies
     for policy_index in policy_indices:
-        try:
-            print(f"  Processing policy {policy_index + 1}...")
+        print(f"  Processing policy {policy_index + 1}...")
 
-            # Process each trustee type
-            for tt in trustee_types_to_process:
-                # Get agreement data for this policy and trustee type
-                df = create_agreement_dataframe(
-                    policy_index=policy_index,
-                    prompt_nums=trustee_prompt_nums,
-                    model=model,
-                    trustee_type=tt,
-                    compare_expert=compare_expert
-                )
-
-                # Extract trustee data for each prompt
-                for prompt_num in trustee_prompt_nums:
-                    trustee_col = f'trustee_prompt_{prompt_num}_agreement'
-                    if trustee_col in df.columns:
-                        trustee_data[tt][prompt_num].append(df[trustee_col].values)
-
-            # Process delegate data (only need to do this once)
-            df_delegate = create_agreement_dataframe(
+        # Process each trustee type
+        for tt in trustee_types_to_process:
+            # Get agreement data for this policy and trustee type
+            df = create_agreement_dataframe(
                 policy_index=policy_index,
-                prompt_nums=delegate_prompt_nums,
+                prompt_nums=trustee_prompt_nums,
                 model=model,
-                trustee_type=None,  # Use any trustee type for delegate data
+                trustee_type=tt,
                 compare_expert=compare_expert
             )
 
-            # Extract delegate data for each prompt
-            for prompt_num in delegate_prompt_nums:
-                delegate_col = f'delegate_prompt_{prompt_num}_agreement'
-                if delegate_col in df_delegate.columns:
-                    delegate_data[prompt_num].append(df_delegate[delegate_col].values)
+            # Extract trustee data for each prompt
+            for prompt_num in trustee_prompt_nums:
+                trustee_col = f'trustee_prompt_{prompt_num}_agreement'
+                if trustee_col in df.columns:
+                    trustee_data[tt][prompt_num].append(df[trustee_col].values)
 
-            successful_policies.append(policy_index)
+        # Process delegate data (only need to do this once)
+        df_delegate = create_agreement_dataframe(
+            policy_index=policy_index,
+            prompt_nums=delegate_prompt_nums,
+            model=model,
+            trustee_type=None,  # Use any trustee type for delegate data
+            compare_expert=compare_expert
+        )
 
-        except Exception as e:
-            print(f"  Error with policy {policy_index + 1}: {e}")
-            continue
+        # Extract delegate data for each prompt
+        for prompt_num in delegate_prompt_nums:
+            delegate_col = f'delegate_prompt_{prompt_num}_agreement'
+            if delegate_col in df_delegate.columns:
+                delegate_data[prompt_num].append(df_delegate[delegate_col].values)
+
+        successful_policies.append(policy_index)
 
     print(f"Successfully processed {len(successful_policies)} policies")
 
