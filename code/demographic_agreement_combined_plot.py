@@ -48,7 +48,7 @@ def collect_expert_agreement_data(
     trustee_type: str,
     bio_df: pd.DataFrame,
     demographic: str,
-    alphas: List[float]
+    alpha: float
 ) -> pd.DataFrame:
     """
     Collect delegate and trustee agreement rates with expert consensus
@@ -72,7 +72,7 @@ def collect_expert_agreement_data(
                     delegate_prompt_nums=delegate_prompt_nums,
                     trustee_prompt_nums=trustee_prompt_nums,
                     model=model,
-                    alphas=alphas,
+                    alpha=alpha,
                     trustee_type=trustee_type,
                     compare_expert=True,
                     bio_df=bio_df,
@@ -87,11 +87,9 @@ def collect_expert_agreement_data(
                             group = parts[1]
 
                             if col.startswith("trustee_"):
-                                # Average across alphas
-                                val = df[col].mean()
+                                val = df[col].iloc[0]
                                 condition = "Trustee"
                             elif col.startswith("delegate_"):
-                                # Constant across alphas, take first
                                 val = df[col].iloc[0]
                                 condition = "Delegate"
                             else:
@@ -128,7 +126,7 @@ def collect_default_agreement_data(
     trustee_type: str,
     bio_df: pd.DataFrame,
     demographic: str,
-    alphas: List[float]
+    alpha: float
 ) -> pd.DataFrame:
     """
     Collect delegate and trustee agreement rates with model defaults
@@ -152,7 +150,7 @@ def collect_default_agreement_data(
                     delegate_prompt_nums=delegate_prompt_nums,
                     trustee_prompt_nums=trustee_prompt_nums,
                     model=model,
-                    alphas=alphas,
+                    alpha=alpha,
                     trustee_type=trustee_type,
                     compare_expert=False,  # Compare to model default
                     bio_df=bio_df,
@@ -167,11 +165,9 @@ def collect_default_agreement_data(
                             group = parts[1]
 
                             if col.startswith("trustee_"):
-                                # Average across alphas
-                                val = df[col].mean()
+                                val = df[col].iloc[0]
                                 condition = "Trustee"
                             elif col.startswith("delegate_"):
-                                # Constant across alphas, take first
                                 val = df[col].iloc[0]
                                 condition = "Delegate"
                             else:
@@ -579,7 +575,6 @@ def create_combined_demographic_plot(
     trustee_type: str,
     bio_df: pd.DataFrame,
     demographics: List[str],
-    alphas: List[float],
     alpha: float,
     figsize: Tuple[int, int] = (12, 8),
     output_file: str = None,
@@ -601,8 +596,7 @@ def create_combined_demographic_plot(
         trustee_type: "trustee_ls" or "trustee_lsd"
         bio_df: Biography dataframe with demographic info
         demographics: List of demographic columns to plot
-        alphas: Alpha values for agreement calculation (used for both rows)
-        alpha: (Not used - kept for backward compatibility)
+        alpha: Alpha value for trustee calculations
         figsize: Figure size
         output_file: Optional output file path
         expert_topics: List of policy topics for expert consensus (top row)
@@ -647,7 +641,7 @@ def create_combined_demographic_plot(
             trustee_type=trustee_type,
             bio_df=bio_df,
             demographic=demographic,
-            alphas=alphas
+            alpha=alpha
         )
 
         plot_expert_agreement_panel(
@@ -671,7 +665,7 @@ def create_combined_demographic_plot(
             trustee_type=trustee_type,
             bio_df=bio_df,
             demographic=demographic,
-            alphas=alphas
+            alpha=alpha
         )
 
         plot_expert_agreement_panel(
@@ -755,8 +749,7 @@ if __name__ == "__main__":
     trustee_type = "trustee_ls"
     delegate_prompt_nums = [0, 1, 2, 3, 4]  # Delegate prompt numbers
     trustee_prompt_nums = [0, 1, 2]  # Trustee prompt numbers
-    alphas = [1.0]  # Use alpha=1.0 for agreement calculation
-    alpha = 1.0  # Use alpha=1.0 for trustee calculations (kept for backward compatibility)
+    alpha = 1.0  # Alpha value for trustee calculations
 
     # Split policies by expert consensus availability
     # TODO: Programmatically determine which policies have expert consensus
@@ -804,7 +797,6 @@ if __name__ == "__main__":
         trustee_type=trustee_type,
         bio_df=bio_df,
         demographics=demographics,
-        alphas=alphas,
         alpha=alpha,
         expert_topics=expert_topics,
         no_consensus_topics=no_consensus_topics,
