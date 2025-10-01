@@ -195,7 +195,7 @@ def create_facet_agreement_plot(
             ax.grid(True, alpha=0.3)
             ax.set_xlim(0, 1)
             if single_policy_mode:
-                ax.set_ylim(0.3, 1)
+                ax.set_ylim(0.0, 1)
             else:
                 ax.set_ylim(0.5, 1)
 
