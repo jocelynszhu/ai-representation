@@ -924,8 +924,8 @@ if __name__ == "__main__":
     #raise Exception("Stop here")
     #expert_consensus_policies = list(range(20, 30))  # Policies with expert votes
     #no_consensus_policies = list(range(0, 20))       # Policies without expert votes
-    expert_consensus_policies = []
-    no_consensus_policies = [3]
+   # expert_consensus_policies = []
+    #no_consensus_policies = [3]
     #demographics = ["Political Affiliation", "Race"]
     #demographics = ["Age Group", "Income", "Education", "Political Affiliation", "Race"]
     demographics = ["Political Affiliation", "Income"]

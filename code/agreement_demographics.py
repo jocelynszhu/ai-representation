@@ -247,9 +247,9 @@ def _calculate_trustee_agreement_rate_by_demo(
         votes.append({"participant_id": row['participant_id'], "vote": vote_result['vote']})
     if not votes:
         if bio_df is not None and demographic is not None:
-            return pd.Series(dtype=float)
+            return pd.Series(dtype=np.float64 )
         else:
-            return 0.0
+            return np.nan
 
     df_votes = pd.DataFrame(votes)
 
@@ -273,9 +273,9 @@ def _calculate_delegate_agreement_rate_by_demo(
     """Agreement rate between delegate votes and reference vote, optionally split by demographic group."""
     if len(delegate_data) == 0:
         if bio_df is not None and demographic is not None:
-            return pd.Series(dtype=float)
+            return pd.Series(dtype=np.float64)
         else:
-            return 0.0
+            return np.nan
 
     # If demographic split is requested
     if bio_df is not None and demographic is not None:
@@ -318,7 +318,7 @@ def calculate_delegate_trustee_agreement_by_demo(
             continue
 
     if not votes or len(delegate_data) == 0:
-        return pd.Series(dtype=float)
+        return pd.Series(dtype=np.float64)
 
     trustee_df = pd.DataFrame(votes)
     delegate_df = delegate_data.rename(columns={"vote": "delegate_vote"})
