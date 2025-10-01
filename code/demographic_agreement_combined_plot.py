@@ -415,11 +415,11 @@ def plot_expert_agreement_panel(
 
             # Use hatch for Trustee only, Delegate is solid
             if condition == "Delegate":
-                bar_hatch = None  # No hatch for delegate (solid)
+                bar_hatch = "///"  # No hatch for delegate (solid)
                 bar_label = "Delegate" if not delegate_bar_plotted else None
                 delegate_bar_plotted = True
             else:  # Trustee
-                bar_hatch = "///"  # Forward slash hatch for trustee
+                bar_hatch = None  # Forward slash hatch for trustee
                 bar_label = "Trustee (Long-term)" if not trustee_bar_plotted else None
                 trustee_bar_plotted = True
 
@@ -460,7 +460,7 @@ def plot_expert_agreement_panel(
     else:
         ax.set_xticklabels([])
     if show_ylabel:
-        ax.set_ylabel(ylabel)
+        ax.set_ylabel(ylabel, fontsize=10)
     ax.set_ylim(ylim[0], ylim[1])
     ax.set_title(title, fontsize=12)  # No bold
     ax.yaxis.set_major_formatter(plt.FuncFormatter(lambda y, _: f"{y:.0%}"))
@@ -578,7 +578,7 @@ def create_combined_demographic_plot(
     demographics: List[str],
     alphas: List[float],
     alpha: float,
-    figsize: Tuple[int, int] = (16, 12),
+    figsize: Tuple[int, int] = (12, 8),
     output_file: str = None,
     expert_topics: List[str] = None,
     no_consensus_topics: List[str] = None
@@ -653,7 +653,7 @@ def create_combined_demographic_plot(
             demographic,
             demographic,  # Just the demographic name
             show_ylabel=(col_idx == 0),  # Only show ylabel on leftmost chart
-            ylabel="Agreement Rate with Model Default",
+            ylabel="Agreement w/ Model Default",
             ylim=(0.0, 1.02),  # Start at 0%
             show_xticklabels=False  # Hide x-tick labels on top row
         )
@@ -676,7 +676,7 @@ def create_combined_demographic_plot(
             demographic,
             None,  # No title for bottom row
             show_ylabel=(col_idx == 0),  # Only show ylabel on leftmost chart
-            ylabel="Agreement Rate with Expert",
+            ylabel="Agreement w/ Expert Consensus",
             ylim=(0.4, 1.02),  # Start at 40% for expert agreement
             show_xticklabels=True  # Show x-tick labels on bottom row
         )
@@ -688,7 +688,7 @@ def create_combined_demographic_plot(
     bar_type_labels = [l for l in bar_labels if l in ["Delegate", "Trustee (Long-term)"]]
     if bar_type_handles:
         legend1 = fig.legend(bar_type_handles, bar_type_labels,
-                  loc="lower left", bbox_to_anchor=(0.2, 0.03),
+                  loc="lower left", bbox_to_anchor=(0.05, 0.06),
                   fontsize=10, frameon=True, title="Condition",
                   ncol=2, borderaxespad=0, handlelength=2, handleheight=1.5)
 
@@ -697,20 +697,20 @@ def create_combined_demographic_plot(
     model_labels = [l for l in bar_labels if l not in ["Delegate", "Trustee (Long-term)"]]
     if model_handles:
         legend2 = fig.legend(model_handles, model_labels,
-                  loc="lower left", bbox_to_anchor=(0.39, 0.03),
+                  loc="lower left", bbox_to_anchor=(0.35, 0.06),
                   fontsize=10, frameon=True, title="Model",
                   ncol=4, borderaxespad=0, handlelength=2, handleheight=1.5)
 
     # Add no consensus topics text (centered on top row, further right)
     no_consensus_topics_text = "\n".join(no_consensus_topics)
-    fig.text(0.93, 0.72, no_consensus_topics_text,
-            fontsize=8, va='center', ha='center',
+    fig.text(0.96, 0.72, no_consensus_topics_text,
+            fontsize=12, va='center', ha='center',
             bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.3, pad=0.5))
 
     # Add expert topics text (centered on bottom row, further right)
     expert_topics_text = "\n".join(expert_topics)
-    fig.text(0.93, 0.28, expert_topics_text,
-            fontsize=8, va='center', ha='center',
+    fig.text(0.96, 0.33, expert_topics_text,
+            fontsize=12, va='center', ha='center',
             bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.3, pad=0.5))
 
     # Remove individual legends
@@ -723,17 +723,17 @@ def create_combined_demographic_plot(
     # Overall title (no bold)
     fig.suptitle(
         f"Agreement with Model Default and Expert Consensus by Political Affiliation and Race",
-        fontsize=16,
-        y=0.98
+        fontsize=14,
+        y=0.94
     )
 
-    plt.tight_layout(rect=[0, 0.10, 0.87, 0.96])  # Leave more space at bottom for legends and on right for topics
+    plt.tight_layout(rect=[0, 0.14, 0.87, 0.96])  # Leave more space at bottom for legends and on right for topics
 
     if output_file:
         output_dir = os.path.dirname(output_file)
         if output_dir:
             os.makedirs(output_dir, exist_ok=True)
-        plt.savefig(output_file, dpi=300, bbox_inches="tight")
+        plt.savefig(output_file, dpi=500, bbox_inches="tight")
         print(f"\nSaved to: {output_file}")
 
     # plt.show()  # Commented out - plot is saved instead
