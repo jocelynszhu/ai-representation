@@ -42,7 +42,7 @@ def create_agreement_dataframe(
     print(f"Processing policy {policy_index + 1} with {len(prompt_nums)} prompts...")
 
     # Load default vote for this policy
-    default_data = load_policy_votes(model, trustee_type, policy_index, prompt_nums[0])
+    default_data = load_policy_votes(model, None, policy_index, prompt_nums[0])
     default_vote = default_data['defaults']['vote'].iloc[0] if len(default_data['defaults']) > 0 else "Unknown"
 
     # Determine reference vote (expert or default)
@@ -73,22 +73,23 @@ def create_agreement_dataframe(
             data = load_policy_votes(model, trustee_type, policy_index, prompt_num)
 
             # Calculate trustee agreement rates across alpha values
-            trustee_agreements = []
-            for alpha in alphas:
-                agreement_rate = _calculate_trustee_agreement_rate(
-                    data['trustee'], alpha, trustee_type, reference_vote
-                )
-                trustee_agreements.append(agreement_rate)
-
+            if trustee_type:
+                trustee_agreements = []
+                for alpha in alphas:
+                    agreement_rate = _calculate_trustee_agreement_rate(
+                        data['trustee'], alpha, trustee_type, reference_vote
+                    )
+                    trustee_agreements.append(agreement_rate)
+                result_data[f'trustee_prompt_{prompt_num}_agreement'] = trustee_agreements
             # Calculate delegate agreement rate (constant across alpha)
-            delegate_agreement = _calculate_delegate_agreement_rate(
-                data['delegate'], reference_vote
-            )
-            delegate_agreements = [delegate_agreement] * len(alphas)
-
-            # Store results
-            result_data[f'trustee_prompt_{prompt_num}_agreement'] = trustee_agreements
-            result_data[f'delegate_prompt_{prompt_num}_agreement'] = delegate_agreements
+            if not trustee_type:
+                delegate_agreement = _calculate_delegate_agreement_rate(
+                    data['delegate'], reference_vote
+                )
+                delegate_agreements = [delegate_agreement] * len(alphas)
+                result_data[f'delegate_prompt_{prompt_num}_agreement'] = delegate_agreements
+            
+            
 
         except Exception as e:
             print(f"  Error processing prompt {prompt_num}: {e}")
@@ -404,7 +405,7 @@ def plot_mean_across_policies(
                 policy_index=policy_index,
                 prompt_nums=delegate_prompt_nums,
                 model=model,
-                trustee_type=trustee_types_to_process[0],  # Use any trustee type for delegate data
+                trustee_type=None,  # Use any trustee type for delegate data
                 compare_expert=compare_expert
             )
 

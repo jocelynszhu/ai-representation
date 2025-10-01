@@ -112,7 +112,7 @@ def create_facet_agreement_plot(
                     compare_expert=config["compare_expert"],
                     show_plot=False
                 )
-
+                df.to_csv("mean_across_policies.csv")
                 # Plot individual trustee_ls prompts (thin, light, model-specific color)
                 for prompt_num in trustee_prompt_nums:
                     col_name = f'trustee_ls_prompt_{prompt_num}_mean'
