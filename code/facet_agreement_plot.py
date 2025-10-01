@@ -38,11 +38,16 @@ def create_facet_agreement_plot(
     # Load policy data if single policy
     policy_statement = None
     has_expert_vote = False
+    is_consensus = None
+    expert_vote = None
     if single_policy_mode:
         policies_df = pd.read_json("../self_selected_policies_new.jsonl", lines=True)
         policy_data = policies_df.iloc[policy_indices[0]]
         policy_statement = policy_data['statement']
-        has_expert_vote = pd.notna(policy_data.get('expert_vote'))
+        print(policy_data)
+        is_consensus = policy_data.get('consensus', 'Unknown')
+        expert_vote = policy_data.get('expert_vote')
+        has_expert_vote = pd.notna(expert_vote)
 
     # Create subplot grid based on mode
     if single_policy_mode:
@@ -121,6 +126,7 @@ def create_facet_agreement_plot(
         "gpt-4o": '#FFB6C1'                   # Pink
     }
 
+    model_reference_votes = {}
     # Process each subplot
     for config in configs:
         row = config["row"]
@@ -135,7 +141,7 @@ def create_facet_agreement_plot(
 
             for model, display_name in zip(group["models"], group["display_names"]):
                 # Get data using plot_mean_across_policies
-                df = plot_mean_across_policies(
+                df, reference_vote = plot_mean_across_policies(
                     policy_indices=policy_indices,
                     delegate_prompt_nums=delegate_prompt_nums,
                     trustee_prompt_nums=trustee_prompt_nums,
@@ -145,6 +151,7 @@ def create_facet_agreement_plot(
                     compare_expert=config["compare_expert"],
                     show_plot=False
                 )
+                model_reference_votes[display_name] = reference_vote
                 # Plot individual trustee_ls prompts (thin, light, model-specific color)
                 for prompt_num in trustee_prompt_nums:
                     col_name = f'trustee_ls_prompt_{prompt_num}_mean'
@@ -187,7 +194,10 @@ def create_facet_agreement_plot(
             # Format subplot
             ax.grid(True, alpha=0.3)
             ax.set_xlim(0, 1)
-            ax.set_ylim(0.5, 1)
+            if single_policy_mode:
+                ax.set_ylim(0.3, 1)
+            else:
+                ax.set_ylim(0.5, 1)
 
             # Hide top and right spines
             ax.spines['top'].set_visible(False)
@@ -235,16 +245,34 @@ def create_facet_agreement_plot(
     if single_policy_mode:
         # Wrap policy statement text
         wrapped_policy = "\n".join(textwrap.wrap(policy_statement, width=28))
-        fig.text(0.78, 0.5, wrapped_policy,
+        fig.text(0.78, 0.62, wrapped_policy,
                 fontsize=10, va='center', ha='left',
                 bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.3, pad=0.5))
 
+        # Display the reference vote for each model below the wrapped policy statement
+        # model_reference_votes is expected to be a dict: {model_name: reference_vote}
+        if isinstance(model_reference_votes, dict):
+            # Format as "Model: Vote" per line
+            ref_vote_lines = [f"{model}: {vote}" for model, vote in model_reference_votes.items()]
+            default_or_expert = "Model Default" if is_consensus == "No" else "Expert Consensus"
+            if is_consensus == "No":
+                ref_vote_lines = [f"{model}: {vote}" for model, vote in model_reference_votes.items()]
+                ref_vote_text = f"{default_or_expert} Vote\n" + "\n".join(ref_vote_lines)
+            else:
+                ref_vote_text = f"Expert Consensus: {expert_vote}"
+        else:
+            # Fallback if not a dict (for backward compatibility)
+            ref_vote_text = f"{default_or_expert} Vote {model_reference_votes}"
+
+        fig.text(0.78, 0.46, ref_vote_text,
+                 fontsize=10, va='top', ha='left',
+                 bbox=dict(boxstyle='round', facecolor='lightblue', alpha=0.3, pad=0.5))
         # Set suptitle based on expert vote
         if has_expert_vote:
-            fig.suptitle("Agreement with Expert Consensus",
+            fig.suptitle(f"Agreement with Expert Consensus",
                         fontsize=16, y=1.00)
         else:
-            fig.suptitle("Agreement with Model Default",
+            fig.suptitle(f"Agreement with Model Default",
                         fontsize=16, y=1.00)
     else:
         # Top row: No consensus topics (Model Defaults)
@@ -308,7 +336,7 @@ if __name__ == "__main__":
     # Example: Create facet plot for all 30 policies
     fig = create_facet_agreement_plot(
         #policy_indices=list(range(30)),
-        policy_indices = [0],
+        policy_indices = [29],
         delegate_prompt_nums=[0, 1, 2, 3, 4],
         trustee_prompt_nums=[0, 1, 2],
         figsize=(12, 8),

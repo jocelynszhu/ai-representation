@@ -101,7 +101,7 @@ def create_agreement_dataframe(
     if delegate_cols:
         df['delegate_mean_agreement'] = df[delegate_cols].mean(axis=1)
 
-    return df
+    return df, reference_vote
 
 def _get_expert_vote(policy_index: int) -> Optional[str]:
     """Get expert vote for a policy if it exists."""
@@ -376,7 +376,7 @@ def plot_mean_across_policies(
         # Process each trustee type
         for tt in trustee_types_to_process:
             # Get agreement data for this policy and trustee type
-            df = create_agreement_dataframe(
+            df, reference_vote = create_agreement_dataframe(
                 policy_index=policy_index,
                 prompt_nums=trustee_prompt_nums,
                 model=model,
@@ -391,7 +391,7 @@ def plot_mean_across_policies(
                     trustee_data[tt][prompt_num].append(df[trustee_col].values)
 
         # Process delegate data (only need to do this once)
-        df_delegate = create_agreement_dataframe(
+        df_delegate, reference_vote = create_agreement_dataframe(
             policy_index=policy_index,
             prompt_nums=delegate_prompt_nums,
             model=model,
@@ -567,7 +567,7 @@ def plot_mean_across_policies(
         plt.tight_layout()
         plt.show()
 
-    return result_df
+    return result_df, reference_vote
 
 
 #%%
