@@ -335,8 +335,8 @@ def create_facet_agreement_plot(
 if __name__ == "__main__":
     # Example: Create facet plot for all 30 policies
     fig = create_facet_agreement_plot(
-        #policy_indices=list(range(30)),
-        policy_indices = [29],
+        policy_indices=list(range(30)),
+       #policy_indices = [29],
         delegate_prompt_nums=[0, 1, 2, 3, 4],
         trustee_prompt_nums=[0, 1, 2],
         figsize=(12, 8),
