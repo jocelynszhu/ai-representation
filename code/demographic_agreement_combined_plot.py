@@ -689,7 +689,7 @@ def create_combined_demographic_plot(
                     alpha=alpha
                 )
                 ylabel = "Agreement w/ Expert Consensus"
-                ylim = (0.4, 1.02)
+                ylim = (0.0, 1.02)
             else:
                 print("\n--- Collecting default agreement data ---")
                 data = collect_default_agreement_data(
@@ -798,7 +798,7 @@ def create_combined_demographic_plot(
     if single_policy_mode:
         # Wrap policy statement text
         wrapped_policy = "\n".join(textwrap.wrap(policy_statement, width=28))
-        fig.text(0.92, 0.62, wrapped_policy,
+        fig.text(0.75, 0.62, wrapped_policy,
                 fontsize=10, va='center', ha='left',
                 bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.3, pad=0.5))
 
@@ -826,8 +826,8 @@ def create_combined_demographic_plot(
         else:
             ref_vote_lines = [f"{model}: {vote}" for model, vote in model_reference_votes.items()]
             ref_vote_text = f"Model Default Vote\n" + "\n".join(ref_vote_lines)
-
-        fig.text(0.92, 0.46, ref_vote_text,
+    
+        fig.text(0.75, 0.46, ref_vote_text,
                  fontsize=10, va='top', ha='left',
                  bbox=dict(boxstyle='round', facecolor='lightblue', alpha=0.3, pad=0.5))
     else:
@@ -924,8 +924,8 @@ if __name__ == "__main__":
     #raise Exception("Stop here")
     #expert_consensus_policies = list(range(20, 30))  # Policies with expert votes
     #no_consensus_policies = list(range(0, 20))       # Policies without expert votes
-    #expert_consensus_policies = [29]
-    #no_consensus_policies = []
+    expert_consensus_policies = []
+    no_consensus_policies = [3]
     #demographics = ["Political Affiliation", "Race"]
     #demographics = ["Age Group", "Income", "Education", "Political Affiliation", "Race"]
     demographics = ["Political Affiliation", "Income"]
