@@ -746,7 +746,7 @@ if __name__ == "__main__":
     bio_df.rename(columns={"ID": "participant_id"}, inplace=True)
 
     # Configuration
-    trustee_type = "trustee_ls"
+    trustee_type = "both"
     delegate_prompt_nums = [0, 1, 2, 3, 4]  # Delegate prompt numbers
     trustee_prompt_nums = [0, 1, 2]  # Trustee prompt numbers
     alpha = 1.0  # Alpha value for trustee calculations

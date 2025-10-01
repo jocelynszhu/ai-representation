@@ -36,7 +36,7 @@ def create_agreement_dataframe(
         trustee_prompt_nums (List[int]): List of trustee prompt numbers to analyze
         model (str): Model name (e.g., "claude-3-sonnet-v2")
         alpha (float): Alpha/sigma value for trustee calculations
-        trustee_type (str): Either "trustee_ls" or "trustee_lsd"
+        trustee_type (str): Either "trustee_ls", "trustee_lsd", or "both"
         compare_expert (bool): If True, compare to expert vote instead of model default
         bio_df (pd.DataFrame, optional): DataFrame of biographies with "id" column
         demographic (str, optional): Column in bio_df to split agreement by
@@ -47,10 +47,16 @@ def create_agreement_dataframe(
 
     result_data = {}
 
-    print(f"Processing policy {policy_index + 1} with {len(trustee_prompt_nums)} trustee prompts and {len(delegate_prompt_nums)} delegate prompts at alpha={alpha}...")
+    # Determine which trustee types to process
+    if trustee_type == "both":
+        trustee_types_to_process = ["trustee_ls", "trustee_lsd"]
+        print(f"Processing policy {policy_index + 1} with {len(trustee_prompt_nums)} trustee prompts (both LS and LSD) and {len(delegate_prompt_nums)} delegate prompts at alpha={alpha}...")
+    else:
+        trustee_types_to_process = [trustee_type]
+        print(f"Processing policy {policy_index + 1} with {len(trustee_prompt_nums)} trustee prompts and {len(delegate_prompt_nums)} delegate prompts at alpha={alpha}...")
 
-    # Load default vote for this policy
-    default_data = load_policy_votes(model, trustee_type, policy_index, trustee_prompt_nums[0])
+    # Load default vote for this policy (use first trustee type if "both")
+    default_data = load_policy_votes(model, None, policy_index, trustee_prompt_nums[0])
     default_vote = (
         default_data["defaults"]["vote"].iloc[0]
         if len(default_data["defaults"]) > 0
@@ -82,33 +88,46 @@ def create_agreement_dataframe(
     for prompt_num in trustee_prompt_nums:
         print(f"  Processing trustee prompt {prompt_num}...")
 
-        try:
-            data = load_policy_votes(model, trustee_type, policy_index, prompt_num)
+        if demographic and bio_df is not None:
+            # Trustee (split by demographic) - accumulate across trustee types
+            group_rates_by_type = {}  # {group: [rate_from_type1, rate_from_type2]}
 
-            if demographic and bio_df is not None:
-                # Trustee (split by demographic)
-                rates = _calculate_trustee_agreement_rate_by_demo(
-                    data["trustee"], alpha, trustee_type, reference_vote, bio_df, demographic
-                )
-                for group, val in rates.items():
-                    col_name = f"trustee_prompt_{prompt_num}_agreement_{group}"
-                    result_data[col_name] = val
+            for tt in trustee_types_to_process:
+                try:
+                    data = load_policy_votes(model, tt, policy_index, prompt_num)
+                    rates = _calculate_trustee_agreement_rate_by_demo(
+                        data["trustee"], alpha, tt, reference_vote, bio_df, demographic
+                    )
+                    for group, val in rates.items():
+                        if group not in group_rates_by_type:
+                            group_rates_by_type[group] = []
+                        group_rates_by_type[group].append(val)
+                except Exception as e:
+                    print(f"    Error processing trustee type {tt} prompt {prompt_num}: {e}")
+                    continue
 
-            else:
-                # Trustee (overall)
-                agreement_rate = _calculate_trustee_agreement_rate_by_demo(
-                    data["trustee"], alpha, trustee_type, reference_vote
-                )
-                result_data[f"trustee_prompt_{prompt_num}_agreement"] = agreement_rate
+            # Average across trustee types for each group
+            for group, rates_list in group_rates_by_type.items():
+                col_name = f"trustee_prompt_{prompt_num}_agreement_{group}"
+                result_data[col_name] = np.nanmean(rates_list) if rates_list else np.nan
 
-        except Exception as e:
-            print(f"  Error processing trustee prompt {prompt_num}: {e}")
-            # Fill with NaN values
-            if demographic and bio_df is not None:
-                # If demographic mode, add NaNs for each group (unknown groups until first success)
-                pass
-            else:
-                result_data[f"trustee_prompt_{prompt_num}_agreement"] = np.nan
+        else:
+            # Trustee (overall) - accumulate across trustee types
+            rates_by_type = []
+
+            for tt in trustee_types_to_process:
+                try:
+                    data = load_policy_votes(model, tt, policy_index, prompt_num)
+                    agreement_rate = _calculate_trustee_agreement_rate_by_demo(
+                        data["trustee"], alpha, tt, reference_vote
+                    )
+                    rates_by_type.append(agreement_rate)
+                except Exception as e:
+                    print(f"    Error processing trustee type {tt} prompt {prompt_num}: {e}")
+                    continue
+
+            # Average across trustee types
+            result_data[f"trustee_prompt_{prompt_num}_agreement"] = np.nanmean(rates_by_type) if rates_by_type else np.nan
 
     # Process delegate prompts
     for prompt_num in delegate_prompt_nums:
