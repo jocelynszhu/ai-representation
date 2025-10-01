@@ -11,6 +11,7 @@ Both rows show Political Affiliation (left) and Race (right) demographics.
 import os
 import pandas as pd
 import numpy as np
+import textwrap
 import matplotlib.pyplot as plt
 from typing import List, Dict, Tuple
 from agreement_demographics import create_agreement_dataframe
@@ -446,7 +447,7 @@ def plot_expert_agreement_panel(
     # Formatting
     ax.set_xticks(group_tick_positions)
     if show_xticklabels:
-        ax.set_xticklabels(group_tick_labels, fontsize=10)
+        ax.set_xticklabels(group_tick_labels, fontsize=10, rotation=45)
     else:
         ax.set_xticklabels([])
     if show_ylabel:
@@ -613,7 +614,32 @@ def create_combined_demographic_plot(
     print("Creating Combined Demographic Agreement Visualization")
     print("=" * 70)
 
-    fig, axes = plt.subplots(2, 2, figsize=figsize)
+    # Detect single policy mode
+    single_policy_mode = (len(expert_consensus_policies) == 1 and len(no_consensus_policies) == 0) or \
+                         (len(no_consensus_policies) == 1 and len(expert_consensus_policies) == 0)
+
+    # Load policy data if single policy
+    policy_statement = None
+    has_expert_consensus = False
+    expert_vote_value = None
+    if single_policy_mode:
+        if len(expert_consensus_policies) == 1:
+            policy_idx = expert_consensus_policies[0]
+            has_expert_consensus = True
+        else:
+            policy_idx = no_consensus_policies[0]
+            has_expert_consensus = False
+
+        policies_df = pd.read_json("../self_selected_policies_new.jsonl", lines=True)
+        policy_data = policies_df.iloc[policy_idx]
+        policy_statement = policy_data['statement']
+        expert_vote_value = policy_data.get('expert_vote')
+
+    # Create subplot grid based on mode
+    if single_policy_mode:
+        fig, axes = plt.subplots(1, 2, figsize=(figsize[0], figsize[1]//2))
+    else:
+        fig, axes = plt.subplots(2, 2, figsize=figsize)
 
     # Process each demographic
     for col_idx, demographic in enumerate(demographics):
@@ -621,62 +647,114 @@ def create_combined_demographic_plot(
         print(f"Processing demographic: {demographic}")
         print(f"{'='*70}")
 
-        # Top row: Agreement with model default
-        print("\n--- Collecting default agreement data ---")
-        default_data = collect_default_agreement_data(
-            policy_indices=no_consensus_policies,
-            delegate_prompt_nums=delegate_prompt_nums,
-            trustee_prompt_nums=trustee_prompt_nums,
-            models=MODELS,
-            trustee_type=trustee_type,
-            bio_df=bio_df,
-            demographic=demographic,
-            alpha=alpha
-        )
+        if single_policy_mode:
+            # Single policy mode: use appropriate data based on expert consensus
+            if has_expert_consensus:
+                print("\n--- Collecting expert agreement data ---")
+                data = collect_expert_agreement_data(
+                    policy_indices=expert_consensus_policies,
+                    delegate_prompt_nums=delegate_prompt_nums,
+                    trustee_prompt_nums=trustee_prompt_nums,
+                    models=MODELS,
+                    trustee_type=trustee_type,
+                    bio_df=bio_df,
+                    demographic=demographic,
+                    alpha=alpha
+                )
+                ylabel = "Agreement w/ Expert Consensus"
+                ylim = (0.4, 1.02)
+            else:
+                print("\n--- Collecting default agreement data ---")
+                data = collect_default_agreement_data(
+                    policy_indices=no_consensus_policies,
+                    delegate_prompt_nums=delegate_prompt_nums,
+                    trustee_prompt_nums=trustee_prompt_nums,
+                    models=MODELS,
+                    trustee_type=trustee_type,
+                    bio_df=bio_df,
+                    demographic=demographic,
+                    alpha=alpha
+                )
+                ylabel = "Agreement w/ Model Default"
+                ylim = (0.0, 1.02)
 
-        plot_expert_agreement_panel(
-            axes[0, col_idx],
-            default_data,
-            demographic,
-            demographic,  # Just the demographic name
-            show_ylabel=(col_idx == 0),  # Only show ylabel on leftmost chart
-            ylabel="Agreement w/ Model Default",
-            ylim=(0.0, 1.02),  # Start at 0%
-            show_xticklabels=False  # Hide x-tick labels on top row
-        )
+            plot_expert_agreement_panel(
+                axes[col_idx],
+                data,
+                demographic,
+                demographic,  # Show demographic name as title
+                show_ylabel=(col_idx == 0),
+                ylabel=ylabel,
+                ylim=ylim,
+                show_xticklabels=True  # Always show x-tick labels in single policy mode
+            )
+        else:
+            # Multi-policy mode: original 2x2 logic
+            # Top row: Agreement with model default
+            print("\n--- Collecting default agreement data ---")
+            default_data = collect_default_agreement_data(
+                policy_indices=no_consensus_policies,
+                delegate_prompt_nums=delegate_prompt_nums,
+                trustee_prompt_nums=trustee_prompt_nums,
+                models=MODELS,
+                trustee_type=trustee_type,
+                bio_df=bio_df,
+                demographic=demographic,
+                alpha=alpha
+            )
 
-        # Bottom row: Expert agreement
-        print("\n--- Collecting expert agreement data ---")
-        expert_data = collect_expert_agreement_data(
-            policy_indices=expert_consensus_policies,
-            delegate_prompt_nums=delegate_prompt_nums,
-            trustee_prompt_nums=trustee_prompt_nums,
-            models=MODELS,
-            trustee_type=trustee_type,
-            bio_df=bio_df,
-            demographic=demographic,
-            alpha=alpha
-        )
+            plot_expert_agreement_panel(
+                axes[0, col_idx],
+                default_data,
+                demographic,
+                demographic,  # Just the demographic name
+                show_ylabel=(col_idx == 0),  # Only show ylabel on leftmost chart
+                ylabel="Agreement w/ Model Default",
+                ylim=(0.0, 1.02),  # Start at 0%
+                show_xticklabels=False  # Hide x-tick labels on top row
+            )
 
-        plot_expert_agreement_panel(
-            axes[1, col_idx],
-            expert_data,
-            demographic,
-            None,  # No title for bottom row
-            show_ylabel=(col_idx == 0),  # Only show ylabel on leftmost chart
-            ylabel="Agreement w/ Expert Consensus",
-            ylim=(0.4, 1.02),  # Start at 40% for expert agreement
-            show_xticklabels=True  # Show x-tick labels on bottom row
-        )
+            # Bottom row: Expert agreement
+            print("\n--- Collecting expert agreement data ---")
+            expert_data = collect_expert_agreement_data(
+                policy_indices=expert_consensus_policies,
+                delegate_prompt_nums=delegate_prompt_nums,
+                trustee_prompt_nums=trustee_prompt_nums,
+                models=MODELS,
+                trustee_type=trustee_type,
+                bio_df=bio_df,
+                demographic=demographic,
+                alpha=alpha
+            )
 
-    # Add bar type legend (bottom left, horizontal) - from top row
-    bar_handles, bar_labels = axes[0, 0].get_legend_handles_labels()
+            plot_expert_agreement_panel(
+                axes[1, col_idx],
+                expert_data,
+                demographic,
+                None,  # No title for bottom row
+                show_ylabel=(col_idx == 0),  # Only show ylabel on leftmost chart
+                ylabel="Agreement w/ Expert Consensus",
+                ylim=(0.4, 1.02),  # Start at 40% for expert agreement
+                show_xticklabels=True  # Show x-tick labels on bottom row
+            )
+
+    # Adjust legend position based on mode
+    legend_y = -0.15 if single_policy_mode else 0.06
+
+    # Add bar type legend (bottom left, horizontal)
+    if single_policy_mode:
+        # Get legend from first axis
+        bar_handles, bar_labels = axes[0].get_legend_handles_labels()
+    else:
+        # Get legend from top-left axis
+        bar_handles, bar_labels = axes[0, 0].get_legend_handles_labels()
+
     # Filter to get only Delegate/Trustee (first 2 items)
     bar_type_handles = [h for h, l in zip(bar_handles, bar_labels) if l in ["Delegate", "Trustee (Long-term)"]]
     bar_type_labels = [l for l in bar_labels if l in ["Delegate", "Trustee (Long-term)"]]
     if bar_type_handles:
         legend1 = fig.legend(bar_type_handles, bar_type_labels,
-                  loc="lower left", bbox_to_anchor=(0.05, 0.06),
+                  loc="lower left", bbox_to_anchor=(0.05, legend_y),
                   fontsize=10, frameon=True, title="Condition",
                   ncol=2, borderaxespad=0, handlelength=2, handleheight=1.5)
 
@@ -685,42 +763,107 @@ def create_combined_demographic_plot(
     model_labels = [l for l in bar_labels if l not in ["Delegate", "Trustee (Long-term)"]]
     if model_handles:
         legend2 = fig.legend(model_handles, model_labels,
-                  loc="lower left", bbox_to_anchor=(0.35, 0.06),
+                  loc="lower left", bbox_to_anchor=(0.35, legend_y),
                   fontsize=10, frameon=True, title="Model",
                   ncol=4, borderaxespad=0, handlelength=2, handleheight=1.5)
 
-    # Add no consensus topics text (centered on top row, further right)
-    no_consensus_topics_text = "\n".join(no_consensus_topics)
-    fig.text(0.96, 0.72, no_consensus_topics_text,
-            fontsize=12, va='center', ha='center',
-            bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.3, pad=0.5))
+    # Add text boxes - policy statement for single policy, topics for multiple policies
+    if single_policy_mode:
+        # Wrap policy statement text
+        wrapped_policy = "\n".join(textwrap.wrap(policy_statement, width=28))
+        fig.text(0.92, 0.62, wrapped_policy,
+                fontsize=10, va='center', ha='left',
+                bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.3, pad=0.5))
 
-    # Add expert topics text (centered on bottom row, further right)
-    expert_topics_text = "\n".join(expert_topics)
-    fig.text(0.96, 0.33, expert_topics_text,
-            fontsize=12, va='center', ha='center',
-            bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.3, pad=0.5))
+        # Display the reference vote below the wrapped policy statement
+        # For single policy, need to get reference votes for each model
+        from agreement_plotting import plot_mean_across_policies
+
+        model_reference_votes = {}
+        for model in MODELS:
+            _, reference_vote = plot_mean_across_policies(
+                policy_indices=[policy_idx],
+                delegate_prompt_nums=delegate_prompt_nums,
+                trustee_prompt_nums=trustee_prompt_nums,
+                model=model,
+                trustee_type=trustee_type,
+                consensus_filter=None,
+                compare_expert=has_expert_consensus,
+                show_plot=False
+            )
+            model_reference_votes[MODEL_DISPLAY_NAMES[model]] = reference_vote
+
+        # Format reference vote text
+        if has_expert_consensus:
+            ref_vote_text = f"Expert Consensus: {expert_vote_value}"
+        else:
+            ref_vote_lines = [f"{model}: {vote}" for model, vote in model_reference_votes.items()]
+            ref_vote_text = f"Model Default Vote\n" + "\n".join(ref_vote_lines)
+
+        fig.text(0.92, 0.46, ref_vote_text,
+                 fontsize=10, va='top', ha='left',
+                 bbox=dict(boxstyle='round', facecolor='lightblue', alpha=0.3, pad=0.5))
+    else:
+        # Multi-policy mode: show topic lists
+        # Add no consensus topics text (centered on top row, further right)
+        no_consensus_topics_text = "\n".join(no_consensus_topics)
+        fig.text(0.96, 0.72, no_consensus_topics_text,
+                fontsize=12, va='center', ha='center',
+                bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.3, pad=0.5))
+
+        # Add expert topics text (centered on bottom row, further right)
+        expert_topics_text = "\n".join(expert_topics)
+        fig.text(0.96, 0.33, expert_topics_text,
+                fontsize=12, va='center', ha='center',
+                bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.3, pad=0.5))
 
     # Remove individual legends
-    for ax_row in axes:
-        for ax in ax_row:
+    if single_policy_mode:
+        for ax in axes:
             legend = ax.get_legend()
             if legend:
                 legend.remove()
+    else:
+        for ax_row in axes:
+            for ax in ax_row:
+                legend = ax.get_legend()
+                if legend:
+                    legend.remove()
 
-    # Overall title (no bold)
-    fig.suptitle(
-        f"Agreement with Model Default and Expert Consensus by Political Affiliation and Race",
-        fontsize=14,
-        y=0.94
-    )
+    # Set suptitle based on mode
+    if single_policy_mode:
+        if has_expert_consensus:
+            fig.suptitle(f"Agreement with Expert Consensus",
+                        fontsize=14, y=1.00)
+        else:
+            fig.suptitle(f"Agreement with Model Default",
+                        fontsize=14, y=1.00)
+    else:
+        # Overall title (no bold)
+        fig.suptitle(
+            f"Agreement with Model Default and Expert Consensus by Political Affiliation and Race",
+            fontsize=14,
+            y=0.94
+        )
 
-    plt.tight_layout(rect=[0, 0.14, 0.87, 0.96])  # Leave more space at bottom for legends and on right for topics
+    # Adjust layout based on mode
+    if single_policy_mode:
+        plt.tight_layout()
+        plt.subplots_adjust(top=0.88, right=0.75, bottom=0.12, left=0.06)
+    else:
+        plt.tight_layout(rect=[0, 0.14, 0.87, 0.96])  # Leave more space at bottom for legends and on right for topics
 
     if output_file:
-        output_dir = os.path.dirname(output_file)
-        if output_dir:
-            os.makedirs(output_dir, exist_ok=True)
+        # For single policy mode, use special folder structure
+        if single_policy_mode:
+            save_dir = "../data/plots/demographic_agreement_plots"
+            os.makedirs(save_dir, exist_ok=True)
+            output_file = os.path.join(save_dir, f"policy_{policy_idx}.png")
+        else:
+            output_dir = os.path.dirname(output_file)
+            if output_dir:
+                os.makedirs(output_dir, exist_ok=True)
+
         plt.savefig(output_file, dpi=500, bbox_inches="tight")
         print(f"\nSaved to: {output_file}")
 
@@ -754,9 +897,11 @@ if __name__ == "__main__":
     #raise Exception("Stop here")
     #expert_consensus_policies = list(range(20, 30))  # Policies with expert votes
     #no_consensus_policies = list(range(0, 20))       # Policies without expert votes
-
-    demographics = ["Political Affiliation", "Race"]
-
+    expert_consensus_policies = [29]
+    no_consensus_policies = []
+    #demographics = ["Political Affiliation", "Race"]
+    #demographics = ["Age Group", "Income", "Education", "Political Affiliation", "Race"]
+    demographics = ["Income", "Education"]
     # Define topic lists (easily editable)
     expert_topics = [
         "GMOs Safe",
