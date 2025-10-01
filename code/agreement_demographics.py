@@ -17,7 +17,8 @@ bio_df.rename(columns={"ID": "participant_id"}, inplace=True)
 #%%
 def create_agreement_dataframe(
     policy_index: int,
-    prompt_nums: List[int],
+    delegate_prompt_nums: List[int],
+    trustee_prompt_nums: List[int],
     model: str,
     alphas: List[float],
     trustee_type: str = "trustee_ls",
@@ -31,8 +32,10 @@ def create_agreement_dataframe(
 
     Args:
         policy_index (int): 0-based policy index
-        prompt_nums (List[int]): List of prompt numbers to analyze
+        delegate_prompt_nums (List[int]): List of delegate prompt numbers to analyze
+        trustee_prompt_nums (List[int]): List of trustee prompt numbers to analyze
         model (str): Model name (e.g., "claude-3-sonnet-v2")
+        alphas (List[float]): List of alpha/sigma values
         trustee_type (str): Either "trustee_ls" or "trustee_lsd"
         compare_expert (bool): If True, compare to expert vote instead of model default
         bio_df (pd.DataFrame, optional): DataFrame of biographies with "id" column
@@ -44,10 +47,10 @@ def create_agreement_dataframe(
 
     result_data = {"alpha_sigma": alphas}
 
-    print(f"Processing policy {policy_index + 1} with {len(prompt_nums)} prompts...")
+    print(f"Processing policy {policy_index + 1} with {len(trustee_prompt_nums)} trustee prompts and {len(delegate_prompt_nums)} delegate prompts...")
 
     # Load default vote for this policy
-    default_data = load_policy_votes(model, trustee_type, policy_index, prompt_nums[0])
+    default_data = load_policy_votes(model, trustee_type, policy_index, trustee_prompt_nums[0])
     default_vote = (
         default_data["defaults"]["vote"].iloc[0]
         if len(default_data["defaults"]) > 0
@@ -75,9 +78,9 @@ def create_agreement_dataframe(
     result_data["reference_vote"] = [reference_vote] * len(alphas)
     result_data["vote_type"] = [vote_type] * len(alphas)
 
-    # Process each prompt
-    for prompt_num in prompt_nums:
-        print(f"  Processing prompt {prompt_num}...")
+    # Process trustee prompts
+    for prompt_num in trustee_prompt_nums:
+        print(f"  Processing trustee prompt {prompt_num}...")
 
         try:
             data = load_policy_votes(model, trustee_type, policy_index, prompt_num)
@@ -92,14 +95,6 @@ def create_agreement_dataframe(
                         col_name = f"trustee_prompt_{prompt_num}_agreement_{group}"
                         result_data.setdefault(col_name, []).append(val)
 
-                # Delegate (split by demographic, constant across alpha)
-                rates = _calculate_delegate_agreement_rate_by_demo(
-                    data["delegate"], reference_vote, bio_df, demographic
-                )
-                for group, val in rates.items():
-                    col_name = f"delegate_prompt_{prompt_num}_agreement_{group}"
-                    result_data.setdefault(col_name, []).extend([val] * len(alphas))
-
             else:
                 # Trustee (overall)
                 trustee_agreements = []
@@ -110,6 +105,31 @@ def create_agreement_dataframe(
                     trustee_agreements.append(agreement_rate)
                 result_data[f"trustee_prompt_{prompt_num}_agreement"] = trustee_agreements
 
+        except Exception as e:
+            print(f"  Error processing trustee prompt {prompt_num}: {e}")
+            # Fill with NaN values
+            if demographic and bio_df is not None:
+                # If demographic mode, add NaNs for each group (unknown groups until first success)
+                pass
+            else:
+                result_data[f"trustee_prompt_{prompt_num}_agreement"] = [np.nan] * len(alphas)
+
+    # Process delegate prompts
+    for prompt_num in delegate_prompt_nums:
+        print(f"  Processing delegate prompt {prompt_num}...")
+
+        try:
+            data = load_policy_votes(model, None, policy_index, prompt_num)
+            if demographic and bio_df is not None:
+                # Delegate (split by demographic, constant across alpha)
+                rates = _calculate_delegate_agreement_rate_by_demo(
+                    data["delegate"], reference_vote, bio_df, demographic
+                )
+                for group, val in rates.items():
+                    col_name = f"delegate_prompt_{prompt_num}_agreement_{group}"
+                    result_data.setdefault(col_name, []).extend([val] * len(alphas))
+
+            else:
                 # Delegate (overall)
                 delegate_agreement = _calculate_delegate_agreement_rate_by_demo(
                     data["delegate"], reference_vote
@@ -118,13 +138,12 @@ def create_agreement_dataframe(
                 result_data[f"delegate_prompt_{prompt_num}_agreement"] = delegate_agreements
 
         except Exception as e:
-            print(f"  Error processing prompt {prompt_num}: {e}")
+            print(f"  Error processing delegate prompt {prompt_num}: {e}")
             # Fill with NaN values
             if demographic and bio_df is not None:
                 # If demographic mode, add NaNs for each group (unknown groups until first success)
                 pass
             else:
-                result_data[f"trustee_prompt_{prompt_num}_agreement"] = [np.nan] * len(alphas)
                 result_data[f"delegate_prompt_{prompt_num}_agreement"] = [np.nan] * len(alphas)
 
     df = pd.DataFrame(result_data)
@@ -203,9 +222,9 @@ def _calculate_trustee_agreement_rate_by_demo(
     alpha: float,
     trustee_type: str,
     reference_vote: str,
-    bio_df: pd.DataFrame,
-    demographic: str
-) -> pd.Series:
+    bio_df: Optional[pd.DataFrame] = None,
+    demographic: Optional[str] = None
+):
     votes = []
 
     for _, row in trustee_data.iterrows():
@@ -225,30 +244,47 @@ def _calculate_trustee_agreement_rate_by_demo(
             continue
 
     if not votes:
-        return pd.Series(dtype=float)
+        if bio_df is not None and demographic is not None:
+            return pd.Series(dtype=float)
+        else:
+            return 0.0
 
     df_votes = pd.DataFrame(votes)
-    merged = df_votes.merge(bio_df, on="participant_id", how="left")
-    grouped = merged.groupby(demographic)['vote'].apply(
-        lambda v: (v == reference_vote).mean()
-    )
-    return grouped
+
+    # If demographic split is requested
+    if bio_df is not None and demographic is not None:
+        merged = df_votes.merge(bio_df, on="participant_id", how="left")
+        grouped = merged.groupby(demographic)['vote'].apply(
+            lambda v: (v == reference_vote).mean()
+        )
+        return grouped
+    else:
+        # Return overall agreement rate
+        return (df_votes['vote'] == reference_vote).mean()
 #%%
 def _calculate_delegate_agreement_rate_by_demo(
     delegate_data: pd.DataFrame,
     reference_vote: str,
-    bio_df: pd.DataFrame,
-    demographic: str
-) -> pd.Series:
-    """Agreement rate between delegate votes and reference vote, split by demographic group."""
+    bio_df: Optional[pd.DataFrame] = None,
+    demographic: Optional[str] = None
+):
+    """Agreement rate between delegate votes and reference vote, optionally split by demographic group."""
     if len(delegate_data) == 0:
-        return pd.Series(dtype=float)
+        if bio_df is not None and demographic is not None:
+            return pd.Series(dtype=float)
+        else:
+            return 0.0
 
-    merged = delegate_data.merge(bio_df, on="participant_id", how="left")
-    grouped = merged.groupby(demographic)['vote'].apply(
-        lambda v: (v == reference_vote).mean()
-    )
-    return grouped
+    # If demographic split is requested
+    if bio_df is not None and demographic is not None:
+        merged = delegate_data.merge(bio_df, on="participant_id", how="left")
+        grouped = merged.groupby(demographic)['vote'].apply(
+            lambda v: (v == reference_vote).mean()
+        )
+        return grouped
+    else:
+        # Return overall agreement rate
+        return (delegate_data['vote'] == reference_vote).mean()
 
 def calculate_delegate_trustee_agreement_by_demo(
     trustee_data: pd.DataFrame,

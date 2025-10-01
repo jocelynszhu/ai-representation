@@ -42,7 +42,8 @@ MODEL_COLORS = {
 
 def collect_expert_agreement_data(
     policy_indices: List[int],
-    prompt_nums: List[int],
+    delegate_prompt_nums: List[int],
+    trustee_prompt_nums: List[int],
     models: List[str],
     trustee_type: str,
     bio_df: pd.DataFrame,
@@ -68,7 +69,8 @@ def collect_expert_agreement_data(
             try:
                 df = create_agreement_dataframe(
                     policy_index=policy_idx,
-                    prompt_nums=prompt_nums,
+                    delegate_prompt_nums=delegate_prompt_nums,
+                    trustee_prompt_nums=trustee_prompt_nums,
                     model=model,
                     alphas=alphas,
                     trustee_type=trustee_type,
@@ -120,7 +122,8 @@ def collect_expert_agreement_data(
 
 def collect_default_agreement_data(
     policy_indices: List[int],
-    prompt_nums: List[int],
+    delegate_prompt_nums: List[int],
+    trustee_prompt_nums: List[int],
     models: List[str],
     trustee_type: str,
     bio_df: pd.DataFrame,
@@ -146,7 +149,8 @@ def collect_default_agreement_data(
             try:
                 df = create_agreement_dataframe(
                     policy_index=policy_idx,
-                    prompt_nums=prompt_nums,
+                    delegate_prompt_nums=delegate_prompt_nums,
+                    trustee_prompt_nums=trustee_prompt_nums,
                     model=model,
                     alphas=alphas,
                     trustee_type=trustee_type,
@@ -570,7 +574,6 @@ def plot_delegate_trustee_agreement_panel(
 def create_combined_demographic_plot(
     expert_consensus_policies: List[int],
     no_consensus_policies: List[int],
-    prompt_nums: List[int],
     delegate_prompt_nums: List[int],
     trustee_prompt_nums: List[int],
     trustee_type: str,
@@ -593,9 +596,8 @@ def create_combined_demographic_plot(
     Args:
         expert_consensus_policies: Policy indices with expert votes
         no_consensus_policies: Policy indices without expert votes
-        prompt_nums: Prompt numbers for data collection (used for both rows)
-        delegate_prompt_nums: (Not used - kept for backward compatibility)
-        trustee_prompt_nums: (Not used - kept for backward compatibility)
+        delegate_prompt_nums: List of delegate prompt numbers for data collection
+        trustee_prompt_nums: List of trustee prompt numbers for data collection
         trustee_type: "trustee_ls" or "trustee_lsd"
         bio_df: Biography dataframe with demographic info
         demographics: List of demographic columns to plot
@@ -639,7 +641,8 @@ def create_combined_demographic_plot(
         print("\n--- Collecting default agreement data ---")
         default_data = collect_default_agreement_data(
             policy_indices=no_consensus_policies,
-            prompt_nums=prompt_nums,
+            delegate_prompt_nums=delegate_prompt_nums,
+            trustee_prompt_nums=trustee_prompt_nums,
             models=MODELS,
             trustee_type=trustee_type,
             bio_df=bio_df,
@@ -662,7 +665,8 @@ def create_combined_demographic_plot(
         print("\n--- Collecting expert agreement data ---")
         expert_data = collect_expert_agreement_data(
             policy_indices=expert_consensus_policies,
-            prompt_nums=prompt_nums,
+            delegate_prompt_nums=delegate_prompt_nums,
+            trustee_prompt_nums=trustee_prompt_nums,
             models=MODELS,
             trustee_type=trustee_type,
             bio_df=bio_df,
@@ -749,11 +753,10 @@ if __name__ == "__main__":
 
     # Configuration
     trustee_type = "trustee_ls"
-    prompt_nums = [0, 1, 2]  # For expert agreement (top row)
-    delegate_prompt_nums = [0, 1, 2, 3, 4]  # For bottom row
-    trustee_prompt_nums = [0, 1, 2]  # For bottom row
-    alphas = [1.0]  # Use alpha=1.0 for expert agreement (top row)
-    alpha = 1.0  # Use alpha=1.0 for trustee calculations (bottom row)
+    delegate_prompt_nums = [0, 1, 2, 3, 4]  # Delegate prompt numbers
+    trustee_prompt_nums = [0, 1, 2]  # Trustee prompt numbers
+    alphas = [1.0]  # Use alpha=1.0 for agreement calculation
+    alpha = 1.0  # Use alpha=1.0 for trustee calculations (kept for backward compatibility)
 
     # Split policies by expert consensus availability
     # TODO: Programmatically determine which policies have expert consensus
@@ -796,7 +799,6 @@ if __name__ == "__main__":
     create_combined_demographic_plot(
         expert_consensus_policies=expert_consensus_policies,
         no_consensus_policies=no_consensus_policies,
-        prompt_nums=prompt_nums,
         delegate_prompt_nums=delegate_prompt_nums,
         trustee_prompt_nums=trustee_prompt_nums,
         trustee_type=trustee_type,

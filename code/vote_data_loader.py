@@ -28,7 +28,7 @@ def load_policy_votes(
         ValueError: If trustee_type is not valid or data format is unexpected
     """
     # Validate trustee_type
-    if trustee_type not in ["trustee_ls", "trustee_lsd"]:
+    if trustee_type and trustee_type not in ["trustee_ls", "trustee_lsd"]:
         raise ValueError(f"trustee_type must be 'trustee_ls' or 'trustee_lsd', got: {trustee_type}")
 
     # Convert 0-based index to 1-based for file naming
@@ -38,7 +38,7 @@ def load_policy_votes(
     base_path = "../data"
 
     # Handle different directory structures for trustee data
-    if trustee_type == "trustee_lsd":
+    if trustee_type and trustee_type == "trustee_lsd":
         # trustee_lsd uses a different structure
         trustee_file = f"{base_path}/{trustee_type}/{model}/self_selected_policies_new/prompt-{prompt_num}/t_policy_{policy_id}_votes.jsonl"
     else:
@@ -52,7 +52,8 @@ def load_policy_votes(
     result = {}
 
     # Load trustee data
-    result['trustee'] = _load_trustee_data(trustee_file, trustee_type)
+    if trustee_type:
+        result['trustee'] = _load_trustee_data(trustee_file, trustee_type)
 
     # Load delegate data
     result['delegate'] = _load_delegate_data(delegate_file)
@@ -130,7 +131,7 @@ def _load_defaults_data(file_path: str, policy_index: int) -> pd.DataFrame:
     return pd.DataFrame(data)
 
 
-def _process_trustee_entry(entry: Dict, trustee_type: str) -> Dict:
+def _process_trustee_entry(entry: Dict, trustee_type: Optional[str] = None) -> Dict:
     """Process a single trustee entry based on the trustee type."""
     if trustee_type == "trustee_ls":
         return _process_trustee_ls_entry(entry)
