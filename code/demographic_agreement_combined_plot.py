@@ -40,6 +40,33 @@ MODEL_COLORS = {
     "gpt-4o": "#FF0000"                   # Red
 }
 
+# Custom ordering for demographic groups
+DEMOGRAPHIC_GROUP_ORDER = {
+    "Political Affiliation": ["Republican", "Independent", "Democrat"],
+    "Income": ["Under 50K", "50K-100K", "Over 100K"]
+}
+
+
+def _get_ordered_groups(data: pd.DataFrame, demographic: str) -> List[str]:
+    """
+    Get demographic groups in the appropriate order.
+    Uses custom ordering if defined, otherwise alphabetical.
+    """
+    unique_groups = data["demographic_group"].unique()
+
+    if demographic in DEMOGRAPHIC_GROUP_ORDER:
+        # Use custom ordering, filtering to only include groups that exist in data
+        custom_order = DEMOGRAPHIC_GROUP_ORDER[demographic]
+        ordered = [g for g in custom_order if g in unique_groups]
+        # Add any groups that weren't in the custom order (shouldn't happen normally)
+        for g in unique_groups:
+            if g not in ordered:
+                ordered.append(g)
+        return ordered
+    else:
+        # Use alphabetical ordering
+        return sorted(unique_groups)
+
 
 def collect_expert_agreement_data(
     policy_indices: List[int],
@@ -344,7 +371,7 @@ def plot_expert_agreement_panel(
     data["demographic_group"] = data["demographic_group"].replace(
         "Black or African American", "African American"
     )
-    groups = sorted(data["demographic_group"].unique())
+    groups = _get_ordered_groups(data, demographic)
     conditions = ["Delegate", "Trustee"]
     models = MODELS
 
@@ -447,7 +474,7 @@ def plot_expert_agreement_panel(
     # Formatting
     ax.set_xticks(group_tick_positions)
     if show_xticklabels:
-        ax.set_xticklabels(group_tick_labels, fontsize=10, rotation=45)
+        ax.set_xticklabels(group_tick_labels, fontsize=10, rotation=0)
     else:
         ax.set_xticklabels([])
     if show_ylabel:
@@ -491,7 +518,7 @@ def plot_delegate_trustee_agreement_panel(
     data["demographic_group"] = data["demographic_group"].replace(
         "Black or African American", "African American"
     )
-    groups = sorted(data["demographic_group"].unique())
+    groups = _get_ordered_groups(data, demographic)
     models = MODELS
 
     # Bar positioning
@@ -841,10 +868,10 @@ def create_combined_demographic_plot(
     else:
         # Overall title (no bold)
         fig.suptitle(
-            f"Agreement with Model Default and Expert Consensus by Political Affiliation and Race",
+            f"Agreement with Model Default and Expert Consensus by Political Affiliation and Income",
             fontsize=14,
             y=0.94
-        )
+        )   
 
     # Adjust layout based on mode
     if single_policy_mode:
@@ -897,11 +924,11 @@ if __name__ == "__main__":
     #raise Exception("Stop here")
     #expert_consensus_policies = list(range(20, 30))  # Policies with expert votes
     #no_consensus_policies = list(range(0, 20))       # Policies without expert votes
-    expert_consensus_policies = [29]
-    no_consensus_policies = []
+    #expert_consensus_policies = [29]
+    #no_consensus_policies = []
     #demographics = ["Political Affiliation", "Race"]
     #demographics = ["Age Group", "Income", "Education", "Political Affiliation", "Race"]
-    demographics = ["Income", "Education"]
+    demographics = ["Political Affiliation", "Income"]
     # Define topic lists (easily editable)
     expert_topics = [
         "GMOs Safe",
