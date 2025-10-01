@@ -48,7 +48,6 @@ def calculate_weighted_vote(parsed_response, long_term_weight):
     short_term_weight = 1 - long_term_weight
 
     # Calculate weighted utility for YES vote
-    print(parsed_response)
     # If any of these are lists, take the first entry
     for key in ["yes_vote", "no_vote"]:
         for util_type in ["short_util", "long_util"]:

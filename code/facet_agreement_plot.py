@@ -1,6 +1,9 @@
 #%%
 import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
+import textwrap
+import os
 from typing import List, Optional, Tuple
 from matplotlib.lines import Line2D
 from agreement_plotting import plot_mean_across_policies
@@ -13,7 +16,10 @@ def create_facet_agreement_plot(
     save_path: Optional[str] = None
 ) -> plt.Figure:
     """
-    Create a 2x2 facet plot comparing agreement with model defaults vs expert consensus.
+    Create a facet plot comparing agreement with model defaults vs expert consensus.
+
+    For single policy: Creates 1x2 plot (one row) based on whether policy has expert consensus
+    For multiple policies: Creates 2x2 plot comparing model defaults (top) vs expert consensus (bottom)
 
     Args:
         policy_indices (List[int]): List of 0-based policy indices to analyze
@@ -26,8 +32,23 @@ def create_facet_agreement_plot(
         plt.Figure: The matplotlib figure object
     """
 
-    # Create 2x2 subplot grid
-    fig, axes = plt.subplots(2, 2, figsize=figsize, sharex=True, sharey=True)
+    # Detect single policy mode
+    single_policy_mode = len(policy_indices) == 1
+
+    # Load policy data if single policy
+    policy_statement = None
+    has_expert_vote = False
+    if single_policy_mode:
+        policies_df = pd.read_json("../self_selected_policies_new.jsonl", lines=True)
+        policy_data = policies_df.iloc[policy_indices[0]]
+        policy_statement = policy_data['statement']
+        has_expert_vote = pd.notna(policy_data.get('expert_vote'))
+
+    # Create subplot grid based on mode
+    if single_policy_mode:
+        fig, axes = plt.subplots(1, 2, figsize=(figsize[0], figsize[1]//2), sharex=True, sharey=True)
+    else:
+        fig, axes = plt.subplots(2, 2, figsize=figsize, sharex=True, sharey=True)
 
     # Model names and configurations - organized as Claude models (left) and GPT models (right)
     model_groups = [
@@ -48,12 +69,20 @@ def create_facet_agreement_plot(
     ]
 
     # Define subplot configurations
-    configs = [
-        # Top row: Agreement with Model Defaults
-        {"row": 0, "consensus_filter": "No", "compare_expert": False, "ylabel": "Agreement w/ Model Default"},
-        # Bottom row: Agreement with Expert Consensus
-        {"row": 1, "consensus_filter": "Yes", "compare_expert": True, "ylabel": "Agreement w/ Expert Consensus"}
-    ]
+    if single_policy_mode:
+        # Single row based on expert vote availability
+        if has_expert_vote:
+            configs = [{"row": 0, "consensus_filter": None, "compare_expert": True, "ylabel": "Agreement w/ Expert Consensus"}]
+        else:
+            configs = [{"row": 0, "consensus_filter": None, "compare_expert": False, "ylabel": "Agreement w/ Model Default"}]
+    else:
+        # Two rows for multiple policies
+        configs = [
+            # Top row: Agreement with Model Defaults
+            {"row": 0, "consensus_filter": "No", "compare_expert": False, "ylabel": "Agreement w/ Model Default"},
+            # Bottom row: Agreement with Expert Consensus
+            {"row": 1, "consensus_filter": "Yes", "compare_expert": True, "ylabel": "Agreement w/ Expert Consensus"}
+        ]
 
     # Colors and styles
     trustee_color_dark = '#1f77b4'  # Dark blue
@@ -98,7 +127,11 @@ def create_facet_agreement_plot(
 
         for group in model_groups:
             col = group["col"]
-            ax = axes[row, col]
+            # Handle axes indexing based on mode
+            if single_policy_mode:
+                ax = axes[col]
+            else:
+                ax = axes[row, col]
 
             for model, display_name in zip(group["models"], group["display_names"]):
                 # Get data using plot_mean_across_policies
@@ -163,16 +196,16 @@ def create_facet_agreement_plot(
             # Format y-axis as percentages
             ax.yaxis.set_major_formatter(plt.FuncFormatter(lambda y, _: '{:.0%}'.format(y)))
 
-            # Set titles for top row
-            if row == 0:
+            # Set titles (always show in single policy mode, otherwise only top row)
+            if single_policy_mode or row == 0:
                 ax.set_title(group["title"], fontsize=12)
 
             # Set y-axis labels for leftmost column
             if col == 0:
                 ax.set_ylabel(config["ylabel"], fontsize=10)
 
-            # Set x-axis labels for bottom row
-            if row == 1:
+            # Set x-axis labels (always show in single policy mode, otherwise only bottom row)
+            if single_policy_mode or row == 1:
                 ax.set_xlabel("Long Term Weight", fontsize=10)
 
     # Create Condition legend (bottom left)
@@ -182,8 +215,11 @@ def create_facet_agreement_plot(
     ]
     condition_labels = ["Trustee", "Delegate"]
 
+    # Adjust legend position based on mode
+    legend_y = -0.15 if single_policy_mode else 0.005
+
     legend1 = fig.legend(condition_handles, condition_labels,
-                        loc="lower left", bbox_to_anchor=(0.05, 0.005),
+                        loc="lower left", bbox_to_anchor=(0.05, legend_y),
                         fontsize=12, frameon=True, title="Condition",
                         ncol=2, borderaxespad=0, handlelength=2, handleheight=1.5)
 
@@ -191,52 +227,77 @@ def create_facet_agreement_plot(
     if legend_elements:
         model_handles, model_labels = zip(*legend_elements)
         legend2 = fig.legend(model_handles, model_labels,
-                           loc="lower left", bbox_to_anchor=(0.35, 0.005),
+                           loc="lower left", bbox_to_anchor=(0.35, legend_y),
                            fontsize=12, frameon=True, title="Model",
                            ncol=4, borderaxespad=0, handlelength=2, handleheight=1.5)
 
-    # Add topic text boxes
-    # Top row: No consensus topics (Model Defaults)
-    no_consensus_topics = [
-        "Minimum Wage",
-        "Abortion",
-        "Race/Gender in Hiring",
-        "Universal Healthcare",
-        "Sex Education",
-        "Eat Less Meat",
-        "Immigration",
-        "Crime Sentences",
-        "Government Pension",
-        "Housing for the Homeless"
-    ]
-    no_consensus_text = "\n".join(no_consensus_topics)
-    fig.text(1.02, 0.72, no_consensus_text,
-            fontsize=12, va='center', ha='center',
-            bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.3, pad=0.5))
+    # Add text boxes - policy statement for single policy, topics for multiple policies
+    if single_policy_mode:
+        # Wrap policy statement text
+        wrapped_policy = "\n".join(textwrap.wrap(policy_statement, width=28))
+        fig.text(0.78, 0.5, wrapped_policy,
+                fontsize=10, va='center', ha='left',
+                bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.3, pad=0.5))
 
-    # Bottom row: Expert consensus topics
-    expert_topics = [
-        "GMOs Safe",
-        "Childhood Vaccination",
-        "Free Trade",
-        "Water Fluoridation",
-        "Limiting Carbon Emissions"
-    ]
-    expert_text = "\n".join(expert_topics)
-    fig.text(1.02, 0.33, expert_text,
-            fontsize=12, va='center', ha='center',
-            bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.3, pad=0.5))
+        # Set suptitle based on expert vote
+        if has_expert_vote:
+            fig.suptitle("Agreement with Expert Consensus",
+                        fontsize=16, y=1.00)
+        else:
+            fig.suptitle("Agreement with Model Default",
+                        fontsize=16, y=1.00)
+    else:
+        # Top row: No consensus topics (Model Defaults)
+        no_consensus_topics = [
+            "Minimum Wage",
+            "Abortion",
+            "Race/Gender in Hiring",
+            "Universal Healthcare",
+            "Sex Education",
+            "Eat Less Meat",
+            "Immigration",
+            "Crime Sentences",
+            "Government Pension",
+            "Housing for the Homeless"
+        ]
+        no_consensus_text = "\n".join(no_consensus_topics)
+        fig.text(1.02, 0.72, no_consensus_text,
+                fontsize=12, va='center', ha='center',
+                bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.3, pad=0.5))
 
-    # Set overall title
-    fig.suptitle("Agreement with Model Defaults and Expert Consensus",
-                fontsize=16, y=1.00)
+        # Bottom row: Expert consensus topics
+        expert_topics = [
+            "GMOs Safe",
+            "Childhood Vaccination",
+            "Free Trade",
+            "Water Fluoridation",
+            "Limiting Carbon Emissions"
+        ]
+        expert_text = "\n".join(expert_topics)
+        fig.text(1.02, 0.33, expert_text,
+                fontsize=12, va='center', ha='center',
+                bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.3, pad=0.5))
 
-    # Adjust layout
+        # Set overall title
+        fig.suptitle("Agreement with Model Defaults and Expert Consensus",
+                    fontsize=16, y=1.00)
+
+    # Adjust layout based on mode
     plt.tight_layout()
-    plt.subplots_adjust(top=0.92, right=0.90, bottom=0.14, left=0.06)
+    if single_policy_mode:
+        plt.subplots_adjust(top=0.88, right=0.75, bottom=0.12, left=0.06)
+    else:
+        plt.subplots_adjust(top=0.92, right=0.90, bottom=0.14, left=0.06)
 
     # Save if path provided
     if save_path:
+        # For single policy mode, use special folder structure
+        if single_policy_mode:
+            policy_idx = policy_indices[0]
+            save_dir = "../data/plots/line_agreement_plots"
+            os.makedirs(save_dir, exist_ok=True)
+            save_path = os.path.join(save_dir, f"policy_{policy_idx}.png")
+
         plt.savefig(save_path, dpi=500, bbox_inches='tight')
 
     return fig
@@ -246,7 +307,8 @@ def create_facet_agreement_plot(
 if __name__ == "__main__":
     # Example: Create facet plot for all 30 policies
     fig = create_facet_agreement_plot(
-        policy_indices=list(range(30)),
+        #policy_indices=list(range(30)),
+        policy_indices = [0],
         delegate_prompt_nums=[0, 1, 2, 3, 4],
         trustee_prompt_nums=[0, 1, 2],
         figsize=(12, 8),
