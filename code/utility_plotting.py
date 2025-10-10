@@ -284,9 +284,9 @@ def plot_utilities_comparison(
 
 #%%
 fig3 = plot_utilities_comparison(
-    policy_indices=[2],
+    policy_indices=[23],
     trustee_type="trustee_lsd",
-    model="gpt-4o",
+    model="gpt-4o-mini",
     prompt_num=1
 )
 plt.show()
@@ -312,3 +312,5 @@ if __name__ == "__main__":
     # plt.show()
 
     # Example 3: Compare multiple policies
+
+# %%

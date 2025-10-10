@@ -140,7 +140,7 @@ if __name__ == "__main__":
     )
 
     # Save to Excel
-    output_file = "../data/agreement_table.xlsx"
+    output_file = "../data/plots/agreement_table_v2.xlsx"
     agreement_table.to_excel(output_file)
     print(f"\n✓ Agreement table saved to: {output_file}")
 

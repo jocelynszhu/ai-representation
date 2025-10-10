@@ -668,6 +668,9 @@ def create_combined_demographic_plot(
     else:
         fig, axes = plt.subplots(2, 2, figsize=figsize)
 
+    # Storage for Excel export
+    all_data_for_export = []
+
     # Process each demographic
     for col_idx, demographic in enumerate(demographics):
         print(f"\n{'='*70}")
@@ -705,6 +708,12 @@ def create_combined_demographic_plot(
                 ylabel = "Agreement w/ Model Default"
                 ylim = (0.0, 1.02)
 
+            # Store data for Excel export
+            data_copy = data.copy()
+            data_copy['demographic_type'] = demographic
+            data_copy['comparison_type'] = ylabel
+            all_data_for_export.append(data_copy)
+
             plot_expert_agreement_panel(
                 axes[col_idx],
                 data,
@@ -730,6 +739,12 @@ def create_combined_demographic_plot(
                 alpha=alpha
             )
 
+            # Store default data for Excel export
+            default_data_copy = default_data.copy()
+            default_data_copy['demographic_type'] = demographic
+            default_data_copy['comparison_type'] = "Agreement w/ Model Default"
+            all_data_for_export.append(default_data_copy)
+
             plot_expert_agreement_panel(
                 axes[0, col_idx],
                 default_data,
@@ -754,6 +769,12 @@ def create_combined_demographic_plot(
                 alpha=alpha
             )
 
+            # Store expert data for Excel export
+            expert_data_copy = expert_data.copy()
+            expert_data_copy['demographic_type'] = demographic
+            expert_data_copy['comparison_type'] = "Agreement w/ Expert Consensus"
+            all_data_for_export.append(expert_data_copy)
+
             plot_expert_agreement_panel(
                 axes[1, col_idx],
                 expert_data,
@@ -761,7 +782,7 @@ def create_combined_demographic_plot(
                 None,  # No title for bottom row
                 show_ylabel=(col_idx == 0),  # Only show ylabel on leftmost chart
                 ylabel="Agreement w/ Expert Consensus",
-                ylim=(0.4, 1.02),  # Start at 40% for expert agreement
+                ylim=(0.6, 1.02),  # Start at 60% for expert agreement
                 show_xticklabels=True  # Show x-tick labels on bottom row
             )
 
@@ -894,6 +915,20 @@ def create_combined_demographic_plot(
         plt.savefig(output_file, dpi=500, bbox_inches="tight")
         print(f"\nSaved to: {output_file}")
 
+        # Export data to Excel
+        if all_data_for_export:
+            combined_data = pd.concat(all_data_for_export, ignore_index=True)
+
+            # Generate Excel filename
+            excel_file = output_file.replace('.png', '_data.xlsx')
+
+            # Round agreement_rate to 2 decimal places
+            combined_data['agreement_rate'] = combined_data['agreement_rate'].round(2)
+
+            # Save to Excel
+            combined_data.to_excel(excel_file, index=False)
+            print(f"Data saved to: {excel_file}")
+
     # plt.show()  # Commented out - plot is saved instead
 
     return fig
@@ -962,5 +997,5 @@ if __name__ == "__main__":
         alpha=alpha,
         expert_topics=expert_topics,
         no_consensus_topics=no_consensus_topics,
-        output_file="../data/plots/combined_demographic_agreement.png"
+        output_file="../data/plots/combined_demographic_agreement_v2.png"
     )

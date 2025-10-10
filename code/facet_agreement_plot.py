@@ -223,7 +223,7 @@ def create_facet_agreement_plot(
         Line2D([0], [0], color='darkgrey', linewidth=3, linestyle='--'),
         Line2D([0], [0], color='darkgrey', linewidth=3, linestyle=(0, (5, 5)))
     ]
-    condition_labels = ["Trustee", "Delegate"]
+    condition_labels = ["Delegate", "Trustee"]
 
     # Adjust legend position based on mode
     legend_y = -0.15 if single_policy_mode else 0.005
@@ -327,6 +327,7 @@ def create_facet_agreement_plot(
             save_path = os.path.join(save_dir, f"policy_{policy_idx}.png")
 
         plt.savefig(save_path, dpi=500, bbox_inches='tight')
+        print(f"Saved to: {save_path}")
 
     return fig
 
@@ -335,12 +336,12 @@ def create_facet_agreement_plot(
 if __name__ == "__main__":
     # Example: Create facet plot for all 30 policies
     fig = create_facet_agreement_plot(
-        policy_indices=list(range(30)),
-       #policy_indices = [29],
+        #policy_indices=[i for i in range(30) if i not in (20, 24)],
+        policy_indices = range(30),
         delegate_prompt_nums=[0, 1, 2, 3, 4],
-        trustee_prompt_nums=[0, 1, 2],
+        trustee_prompt_nums=[0,1,2],
         figsize=(12, 8),
-        save_path="../data/plots/facet_agreement_plot.png"
+        save_path="../data/plots/facet_agreement_plot_v2.png"
     )
     # plt.show()  # Commented out - plot is saved instead
 # %%

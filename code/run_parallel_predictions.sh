@@ -2,8 +2,8 @@
 # Simple Parallel Policy Prediction Runner
 
 # Default configuration
-#MODEL="claude-3-haiku-v2-mini"
-MODEL="gpt-4o-mini"
+MODEL="claude-3-haiku-v2-mini"
+#MODEL="gpt-4o-mini"
 PROMPT_TYPE="trustee_lsd"
 PROMPT_NUM=0  # Default value
 N_USERS=""  # Leave empty for all users, or set to a number
